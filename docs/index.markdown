@@ -4,3 +4,5 @@
 
 layout: home
 ---
+h1 Hello
+h2 World
