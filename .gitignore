@@ -1,3 +1,6 @@
 # Editor
 *.swp
 *.swo
+
+# Lock files
+Gemfile.lock
