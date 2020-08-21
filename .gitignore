@@ -3,4 +3,4 @@
 *.swo
 
 # Lock files
-Gemfile.lock
+docs/Gemfile.lock
