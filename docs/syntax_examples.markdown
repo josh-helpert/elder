@@ -1,7 +1,8 @@
 ---
 layout: default
-title: Syntax by Example
-permalink: /syntax-examples/
+title: Elder Syntax by Example
+description: Learn by valid, invalid, and other language examples
+permalink: /syntax-examples
 ---
 
 This document overviews syntax examples without much discussion and is meant as a quick overview.
@@ -9,6 +10,7 @@ This document overviews syntax examples without much discussion and is meant as 
 Notice this doesn't describe the semantics of a language which uses this syntax, only the syntax itself.
 
 ## Sequence
+---
 * Ordered sequence of elements
 * 
 
@@ -25,6 +27,7 @@ x, y, z
 ```
 
 ## Tree
+---
 * Sequences of Sequences
 * Mimics natural layout of formatted code
 * Indent implies parent-child relationship
@@ -116,6 +119,14 @@ staff
     - Thomas Tom,   20
 ```
 
+is equal to
+```
+  * * Billy Bob,    38
+    * Jane Jill,    55
+  * * Hillary Hill, 27
+    * Thomas Tom,   20
+```
+
 which would encode to JSON like
 ```
 {
@@ -133,6 +144,7 @@ which would encode to JSON like
 ```
 
 ## Equals
+---
 * Relates name on left hand to natural value on right hand
   * Natural value is result of executing the right hand
 * Right hand is **always** executed **if** statement is evaluated
@@ -160,6 +172,7 @@ my-fn = Fn (x = 1, y = 2, z = 3) -> Int
 ```
 
 ## Relation space
+---
 * Abstracts over syntax which is hard-coded, are reserved, or not present in other languages
 * Describes relation between a target and a descriptor
 * Only made of punctuation (and not reserved like: ``+ - , ; " ' ` # .. ...``)
@@ -278,6 +291,7 @@ id, class = html/body/header.(id, class)
 the R-hand should be read as: within `html/body/header` relation space `.` get `id, class`
 
 ## Parenthesis
+---
 * Used for grouping to describe precedence (explained in ***Precedence***)
 * Used for the start `(` and stop `)` of a expression, operator, relation space, function, etc.
 
@@ -296,6 +310,7 @@ Age :(type = Int, min = 0)
 ```
 
 ## Identifier
+---
 TODO: Break into categories of what dev will use: variable name, type/trait/interface name, comptime name
 
 Valid variable and function names
@@ -342,12 +357,14 @@ TODO
 ```
 
 ## Precedence
+---
 TODO
 * General overview
 * Using parenthesis
 * How they interact w/ functions, relation spaces, etc.?
 
 ## TODO
+---
 * Codegen
 * Operator/Function
 * Comptime
@@ -367,6 +384,8 @@ TODO
     x:(y = 4, z = 5)        // 
     x:(y = 4, z = 5) = a, b // 
     ```
+* mode vs input vs body vs output
+  * eg `Map(String, Int) vs Map String, Int vs Map String, Int x, y, z vs Map(String, Int) (x, y, z)`
 * call
   ```
   sum 1, 2, 3   // call prefix 'sum' on sequence '1, 2, 3'
@@ -408,3 +427,49 @@ TODO
   * {}
   * ()
   * 
+* Fibonacci
+  ```
+  fib = Fn (n:Int) -> Int
+    if n <= 1
+    then
+      n
+    else
+      fib(n - 1) + fib(n - 2) 
+
+  fib 30
+  ```
+* LISO operator aggregation
+  * Syntax concat
+    ```
+    culprit <in> room <with> weapon =
+       format[msg, culprit, room, weapon] $
+          msg = "Mr. Boddy was killed by ~a in the ~a with the ~a"
+
+    "Colonel Mustard" <in> "ball room" <with> "candlestick"
+    ```
+
+  * For
+    ```
+    @define-syntax for:
+       @syntax-rules [list, begin]:
+
+          for[{}, body, ...] =>
+             {body, ...}
+
+          for[{spec, rest, ...}, body, ...] =>
+             for[spec, for[{rest, ...}, body, ...]]
+
+          for[var = start <to> end <by> increment, body, ...] =>
+             @vars loop[var = start]:
+                @when var <= end:
+                   body
+                   ...
+                   loop[var + increment]
+
+          for[var = start <to> end, body, ...] =>
+             for[var = start <to> end <by> 1, body, ...]
+        
+    @for x = 1 <to> 3
+         y = 10 <to> 30 <by> 10:
+       display[[x, y]]
+    ```

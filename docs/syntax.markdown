@@ -1,10 +1,13 @@
 ---
 layout: default
-title: Syntax
-permalink: /syntax/
+title: Elder Syntax
+description: A minimal, data-oriented, and expressive syntax
+permalink: /syntax
 ---
 
-The Elder syntax arose out of desire to unify data literals with homoiconic programming.
+// Elder syntax aims to 
+
+// The Elder syntax arose out of desire to unify data literals with homoiconic programming.
 
 I was inspired to begin real work as I began using Red-lang and it's ability to work across the entire stack but felt it need not be constrained to the functional programming pardigm. It seemed at least plausable to create a language w/ flexible syntax and semantics which could more approach full-stack development w/ less visual noise and more consistency than most languages are capable of.
 
@@ -19,6 +22,7 @@ The syntax of Elder is primary inspired by:
 This document only describes the ***Elder syntax*** itself. It doesn't tell you about the ***semantics*** (meaning) of the syntax. The semantics are added once the syntax is used w/n a specific context. For example, a sequence within the context of a HTML document are HTML nodes. Clarifying the semantics and other language uses are part of the core language and not described here as they're beyond the scope of the syntax. However, to help, there are some examples with psuedo-code at the end.
 
 ## Sequence
+---
 A ***Sequence*** (much like LISP, Rebol, Red) is a core syntactical structure. A sequence is:
 * A ordered, series of elements
 * A syntactical concept
@@ -70,6 +74,7 @@ a, b, c; x, y, z; 1, 2, 3;
 ```
 
 ## Tree
+---
 A natural extension of a ***Sequence*** are ***Nested Sequences***. This is a ***Tree***.
 
 A ***Tree*** is a primitive structure b/c:
@@ -101,6 +106,7 @@ x
 ```
 
 ## Equals Syntax
+---
 `=` captures the idea of relating a ***L-hand*** to a ***R-Hand***. The type of relationship varies with the context it's defined in.
 
 TODO: Disjoint contexts used in?
@@ -151,7 +157,32 @@ if (x = 4) ...
 
 No one likes ambiguities but the alternatives are worse. Ultimately it was decided that ambiguities are fine at the level of syntax as disambiguation is enforced by semantics not syntax. Further discussion about this decision and alternatives considered can be found here (TODO: link to blog article).
 
+## Shadowing
+---
+Shadowing can cause issues when it's done w/o expecting it. This is especially true in languages like CoffeeScript and Python where adding names to an outer scope will affect inner scope.
+
+There's been several approaches by different languages to make this clear:
+* JavaScript, Java, etc. use keywords like `var`, `const`, `let` for declaration and just allow to redeclare w/n a block
+* Go is much like JavaScript-ilk but additionally has a shorthand for declaration using `:=`
+* Python will always use names from an outer scope using `nonlocal` and `global` to disambiguate when to shadow
+* Zig doesn't allow it at all (this is probably the safest option and b/c it's goal is system programming it makes sense to prioritize safety but not w/o it's downsides)
+* Almost like Zig, Coffeescript generally doesn't allow shadowing but is less consistent b/c it allows function parameters to shadow
+
+From these and other solutions in other languages, here's the problems that arise:
+* Declaraing a name in a locally, then later, someone uses the same name in outer scope which changes meaning of local name to assignment
+* Declaraing a name in a outer scope, then later, one doesn't see the outer name (eg a long file or deeply nested) and resuses the name assuming it's not used
+
+Additional to these, we have a few more goals generally:
+* Shadowing is significant enough should be an explicit choice by the developer, not implicit
+* The most common, least complex, and desirable use-case should have the most minimal, terse syntax. The less common, more complex, and less desirable should have more explicit syntax.
+
+With all this, here's what we've chosen:
+* In order to declare a name the least amount of syntax is using `=` (eg `x = 4`). This remains as a way to declare a name as well as assign. Most use-cases follow this flow.
+* If one choses to shadow, you must explicitly declare it using `:=` (eg `x := 4`). This is read as "declare new x and define as 4". If `x` was not previously defined it will allow it as the intent is to isolate `x` to the current scope.
+* Elements that implicitly declare a new scope (eg a `function parameters`) either must not shadow (ie must declare unique names) or must declare it's intent to shadow (using `:=`)
+
 ## Relation Space
+---
 A ***Relation Space*** is a syntactical tool which models the ***relation*** between a ***target*** and a ***descriptor***.
 
 A relation space has the qualities:
@@ -275,14 +306,36 @@ html/body/header/
 ```
 Here `html/boy/header/` would create syntactic noise as we only really care to do work w/n the `header` so we need to have syntax that allows us to do this naturally.
 
-Implicitly create `.style.css.width` as they're necessary steps for valid HTML:
+Implicitly create `.style.css` structure as they're necessary steps for valid HTML:
 ```
-// As a literal (notice space)
-my-element .style.css.width = 100%
+// As a multiline literal
+my-element
+  .style.css.
+    width  = 100%
+    height = 20px
+
+// or, as a multiline literal w/ '.' ending
+my-element
+  .style.css
+    .width  = 100%
+    .height = 20px
+
+// or, as a multiline literal w/ fully collapsed context
+my-element.style.css.
+  width  = 100%
+  height = 20px
+
+// or, as inline literal (notice space between head and relation space '.')
+my-element .style.css.width = 100%, .style.css.height = 20px
 
 // or, as assignment (no space)
-my-element.style.css.width = 100%
+my-element.style.css.width  = 100%
+my-element.style.css.height = 20px
+
+// or, as assignment w/ selection
+my-element.style.css.(width, height) = 100%, 20px
 ```
+These variations are made available to fit various use-cases. The most clear and terse should be preferred.
 
 Assign and destructure multiple values
 ```
@@ -291,12 +344,17 @@ id, class = html/body/header.id, html/body/header.class
 
 // or, select only the values you need
 id, class = html/body/header.(id, class)
+
+// or, assign w/n
+obj/my-new-header.(id, class) = html/body/header.(id, class)
 ```
 
 ## Parenthesis
-Although we avoid excessive parenthesis, they're often essential. Like much of the syntax they perform multiple duties depending on how they're used:
-* Represent grouping to describe precedence (like in most languages)
+---
+Although strive for terseness, parenthesis are essential. Like much of the syntax they perform multiple duties depending on how they're used:
+* Makes highest precedence (like in most languages)
 * Represent the start `(` and stop `)` of a expression, operator, relation space, function, etc.
+* Groups into a Block
 
 Using this, we can further compact our previous examples from:
 ```
@@ -314,27 +372,306 @@ Age :(type = Int, min = 0)
 
 Parenthesis especially help when combining multiple relation spaces to describe more complex structure. Consider the template psuedo code:
 ```
-div .(id = "spashscreen", class = "spashscreen") :visible-if = "is-first-view"
+div .(id = "intro", class = "spashscreen") :visible-if = "is-first-view"
   h1 .class = "title"
   p .class = "description"
 ```
 
 using a theoretical HTML generator this would translate to:
 ```
-<div id = "spashscreen" class = "spashscreen" data-visible-if = "is-first-view">
+<div id = "intro" class = "spashscreen" data-visible-if = "is-first-view">
   <h1 class = "title"></h1>
   <p class = "description"></p>
 </div>
 ```
-Notice that `:visible-if` is an example of what could be used to add logic to the template.
+Notice that `:visible-if` is an example of a field used for logic in a template. It could either be rendered w/n the HTML (as above) or erased at comptime depending on the use-case.
 
 This syntax is much closer to what we see in languages that model trees directly such as: SDLang, YAML, Pug, SASS. To compact the syntax further syntax sugar and macros should be used although they outside the scope of this document.
 
-### Grouping
-Parenthesis also represent grouping and are the highest precedence.
+### Highest Precedence
+Like many languages, parenthesis also represent grouping and are the highest precedence.
+
+Consider the difference in arithmetic:
+```
+4 + 6 / 2 == 7
+
+(4 + 6) / 2 == 5
+```
+
+Much like a relation space, parenthesis also used to represent the start and end of an operator, function, keyword, and others:
+```
+my-fn(1, 2, 3)   // A prefix function
++(1, 2, 3)       // A operator
+Map(String, Int) // A type
+```
+Notice that the `(` must be connected to the operator, function, keyword, etc. in order to be the start and end.
+
+Since parenthesis are the highest precedence it's also a tool to alter the grouping of arguments:
+```
+// Let f, h be functions
+f 1, h 2, 3 == f(1, h(2, 3))
+
+// but can alter using parenthesis
+f 1, h(2), 3 == f(1, h(2), 3)
+```
+There are other tools which do the same and may be more convenient explained in ***Precedence***.
 
 TODO w/ precedence?
 * Non-transitive? or Smalltalk-like?
+* 
+
+
+## Identifier
+---
+Generally what an identifier starts with determines what it's interpreted as. This becomes useful to accurately describe the meaning of a identifier, include units, etc.
+
+There are special identifiers which can't be used:
+* Type
+  * First character is uppercase alpha (ASCII 65 - 90)
+  * eg types like `Int`, `U32`, `List`
+* Literals
+  * Numeric
+    * Start with a Numeric
+    * eg `2` `3.14` `2e10` `2e-10`, `0xFF` `0b1010` `0o123` `100,000,000` `1+3i`
+    * TODO: Arbitrary base? eg 064x123 (base64)?
+  * Date
+  * Currenty
+  * Boolean
+    * eg `True`, `False`
+  * String
+    * Inline `"` or Block `"""`
+    * eg inline string literal `"Jill Jacques"`
+  * Code
+    * Inline `` ` `` or Block ```` ``` ````
+    * eg inline code literal `` sum-a-b = `a + b` ``
+* Arithmetic
+  * TODO: Can be undefined or not included?
+  * Matches arithmetic characters
+    * `+ - * /`
+    * `** //`
+    * `% %%`
+* Relation Space
+  * Includes only `: . / $ TODO!`
+* Unary
+  * eg `-1` `!true`
+* `\` escape
+  * eg escape character `\n`, `\t`
+  * eg escape in string literal `"Hello \(name)"`
+  * eg escape in code literal `` `a + b / \(denominator)` ``
+* Equals
+  * eg `x = 4`
+  * and shadow `x := 5`
+
+Whitespace is very significant. In identifiers this means if an identifier doesn't contain whitespace it's considered the same identifier. This also means we can include otherwise special characters as long as it follows a few rules:
+* must not have whitespace within identifier (or must be explicitly grouped using codegen or code literal)
+* must not exactly match an existing reserved literal, operator, reserved (eg ``#, `, "``)
+* it doesn't start with a character that would make it be interpreted as an existing type (eg starts with `#` means it's comptime)
+
+Everything else can be used as a identifier. Multi-word identifiers are interspered using hyphen (`-`) b/c:
+* It's simpler to write than ``_`` (underscore)
+* It's arguably just as clear, if not more, than other options (camel case, snake case, etc.)
+* Whitespace is significant and it's not allowed that `x-y` (identifier) and `x - y` (subtraction) are the same
+
+There are a few categories of special identifiers:
+* Literals
+  * Numeric: `2`, `3.14`
+* Types
+  * Only rule is that the first character is alphabetic and upper-case (ASCII 65 - 90)
+  * eg `Int`, `U32`, `List(Int)`
+* Reserved
+  * eg `, ; = : . /`
+
+Everything else can be used as a identifier. Multi-word identifiers are interspered using `-` b/c:
+* It's simpler to write than `_` (underscore)
+* It's arguably just as clear, if not more, than other options
+* Whitespace is significant and it's not allowed that `x-y` (identifier) and `x - y` (subtraction) are the same
+
+Here's a few examples:
+```
+x
+my-staff
+x-0
+x-1
+x-2
+x+y
+x+y-2z
+x'
+x''
+```
+
+## Comments
+---
+There is only one syntax for comments `//`.
+Like most choices, this syntax serves multiple purposes and is done for consistency across codebases to avoid inconsequential variants and minimize holy wars.
+
+Comments function in a few ways:
+* Comments a line
+  ```
+  // My header
+  div .class = header main
+  ```
+* Comments until the end of a line
+  ```
+  div 
+    .class       = header main // My main header
+    .style.width = 100%        // Full width
+  ```
+* Block comments
+  ```
+  // My Notes
+    Notes both ignore the end of a line and it's children.
+    So these are part of the comment as well.
+  ```
+
+## Juxtaposition
+---
+In order to have terse and less noisy syntax, we chose to support juxtaposition (meaning next to one another).
+
+Like Fortress, juxtaposition has to be defined for specific cases (types, rules, etc.)
+* for functions, this is **always** application
+* for numbers, this is multiplication but can be overridden in contexts (explained later)
+
+This makes representing complex mathematical notation w/ less noise
+```
+2 x sin 3 y + 4 tan 8 z 2
+```
+
+which is equivalent to
+```
+2 * x * sin(3 * y) + 4 * tan(8 * z * 2)
+```
+TODO: Must differentiate precedence between `sin` and `3 y` in `sin 3 y` and precedence in general.
+
+## Evaluation
+---
+Evaluation is left mostly to the developer to specify (much like languages like Haskell, Rebol, and Red). This means for many cases that a developer would need to implement a macro it's not necessary.
+
+There are only a few cases where evaluation will occur:
+* within a Block on the r-hand of `=`
+* within Function parameters the r-hand of `=` if there's no supplied value in order to get the default value
+* the following `Block` after a `do` or `#do`
+
+Otherwise evaluation is left for the developer to specify.
+
+
+## Functions
+---
+
+
+
+* Different types of call syntax
+  * f
+      x
+      y
+      z
+  * f x, y ,z === f(x, y, z)
+  * f g h x === f(g(h(x)))
+  * f x, g y, h z === f(x, g(y, h(z)))
+  * f a, b, g i, j, h x, y, z, k, c === f(a, b, g(i, j, h(x, y, z, k, c)))
+  * f a, b, g i, j, h x, y, z; k; c === f(a, b, g(i, j, h(x, y, z) k) c)
+  * UFCS
+    * obj.f(x, y, z) === obj.f x, y, z
+  * open-paren
+    * f( x, y
+    * f(( x, y
+  * fixity
+    * infix: 1 + 2 + 3
+    * prefix: !x
+    * suffix: x!, x++
+* Arity
+  * nullary
+  * unary
+  * binary
+  * varargs
+  * curry?
+* Not all forms always defined?
+  * or precedence (eg `//` inline explicit before body)
+* Partial apply
+* Bind
+* Compound (eg `for-in-by`)
+* 
+
+### Custom Function Identifier
+The function identifier isn't limited to alpha-numeric as it's often useful to allow for syntax to be customized.
+
+For example, it'd be nice to do customize a comment:
+```
+//(mode = markdown)
+  ### Comment Header
+  * Point 1
+  * Point 2
+  * Point 3
+```
+
+## TODO
+---
+
+## Fixity
+In software, fixity means the position of a operator relative to it's arguments.
+
+For simplicity, there are only a fixities: prefix (operator before it's arguments), infix (operator between it's arguments), and aggregate fixity (something custom).
+
+infix is for:
+* Arithmetic: `+ - / *`
+* Boolean: `is isnt not`
+* Predicate: `and or xor`
+* Comparison: `> >= < <=`
+* Shift: `>> <<`
+* Power: `^`
+* Modulus: `% %%`
+* Binary: `& |`
+* 
+
+prefix is for:
+* Negation: `-2` `-(1, -3, 5)`
+* Not: `!true` `!(true, false, my-bool)`
+* Function: `my-fun(x, y, z)`
+* Relation Space: `obj /my-child` `i :type = Int` `div .width = 100%`
+* Anonymous Head (must be at start of line after whitespace): `- my-elem` `* my-elem`
+* 
+
+aggregate fixity is for:
+* TODO: `if, then, else-if, else`
+* 
+
+Differences between: `4 - (2, 3, 4)` vs `4 -(2, 3, 4)` vs `4 -( 2, 3, 4` vs `4 -( 2, 3, 4 )`
+* How infix and prefix distributes
+* How to change fixity and grouping using `( )`
+
+## Identifiers
+* Consider Rebol literals?
+  * Email
+  * File
+  * Hash
+  * Image
+  * Issue (eg serial #)
+  * Block
+  * List
+  * Paren
+  * Path
+  * Tag
+  * Url
+  * Character
+  * Date
+  * Logic
+  * Money
+  * None (non-existence)
+  * Pair (spacial coordinates, sizes, etc.)
+  * Refinement (like adjectives in English) like `append/only` where `append = Function` and `only = Refinement`
+  * Time
+  * Tuple (eg IP address)
+* TODO: Explain why is important to be expressive w/ identifier
+  * Should express many things like: form, mem layout, units, etc.
+    * May need ways to make these meaningful as well like adding meaning to `_` w/n identifier?
+  * Identifiers should impart meaning? eg Pug or Units or ...?
+
+
+
+## Infererence rules
+
+## Rules
+* How traits, interface, types, etc. are a specialization of rules
+* Positive rule (by construction), negative rule
 * 
 
 ## Consistency
@@ -347,7 +684,6 @@ To minimize those cost here's the heuristic we use when making a design choice: 
 
 ### Offside rule
 ### Only 2 spaces, nothing else
-### Juxtaposition
 ### Newlines
 ### Concepts of syntax
 ### Significant Whitespace
@@ -391,113 +727,14 @@ new-staff = [ [ "Janet Johnson", 26 ], [ "James Jackson", 18], [ "Josh Jameson",
 ```
 this isn't idiomatic and should be avoided but can be useful in cases like nested function invocation.
 
-## Identifier
-Generally what an identifier starts with determines what it's interpreted as. This becomes useful to accurately describe the meaning of a identifier, include units, etc.
-
-TODO: Explain why is important to be expressive w/ identifier
-- Should express many things like: form, mem layout, units, etc.
-  - May need ways to make these meaningful as well like adding meaning to `_` w/n identifier?
-
-There are special identifiers which can't be used
-* Type
-  * First character is uppercase alpha (ASCII 65 - 90)
-  * eg types like `Int`, `U32`, `List`
-* Literals
-  * Numeric
-    * Start with a Numeric
-    * eg `2`, `3.14` `2e10`, `2e-10`, `0xFF` `0b1010`, `0o123`, `100,000,000`, `1+3i`
-    * TODO: Arbitrary base? eg 064x123 (base64)?
-  * Date
-  * Currenty
-  * Boolean
-    * eg `True`, `False`
-  * String
-    * Inline `"` or Block `"""`
-    * eg inline string literal `"Jill Jacques"`
-  * Code
-    * Inline `` ` `` or Block ```` ``` ````
-    * eg inline code literal `` sum-a-b = `a + b` ``
-* Arithmetic
-  * TODO: Can be undefined or not included?
-  * Matches arithmetic characters
-    * `+ - * /`
-    * `** //`
-    * `% %%`
-* Relation Space
-  * Includes only `: . / $ TODO!`
-* Unary
-  * eg `-1`, 
-* `\` escape
-  * eg escape character `\n`, `\t`
-  * eg escape in string literal `"Hello \(name)"` or code literal `` `a + b / \(denominator)` ``
-* Equals
-  * TODO
-* Consider Rebol literals?
-  * Email
-  * File
-  * Hash
-  * Image
-  * Issue (eg serial #)
-  * Block
-  * List
-  * Paren
-  * Path
-  * Tag
-  * Url
-  * Character
-  * Date
-  * Logic
-  * Money
-  * None (non-existence)
-  * Pair (spacial coordinates, sizes, etc.)
-  * Refinement (like adjectives in English) like `append/only` where `append = Function` and `only = Refinement`
-  * Time
-  * Tuple (eg IP address)
-  * 
-
-Whitespace is very significant. In identifiers this means if an identifier doesn't contain whitespace it's considered the same identifier. This also means we can include otherwise special characters as long as it follows a few rules:
-* must not have whitespace within identifier (or must be explicitly grouped using codegen or code literal)
-* must not exactly match an existing reserved literal, operator, reserved (eg ``#, `, "``)
-* it doesn't start with a character that would make it be interpreted as an existing type (eg starts with `#` means it's comptime)
-
-Everything else can be used as a identifier. Multi-word identifiers are interspered using hyphen (`-`) b/c:
-* It's simpler to write than ``_`` (underscore)
-* It's arguably just as clear, if not more, than other options (camel case, snake case, etc.)
-* Whitespace is significant and it's not allowed that `x-y` (identifier) and `x - y` (subtraction) are the same
-
-There are a few categories of special identifiers:
-* Literals
-  * Numeric: `2`, `3.14`
-* Types
-  * Only rule is that the first character is alphabetic and upper-case (ASCII 65 - 90)
-  * eg `Int`, `U32`, `List(Int)`
-* Reserved
-  * eg `,`, `;`, `=`, `:`, `.`, `/`
-
-Everything else can be used as a identifier. Multi-word identifiers are interspered using `-` b/c:
-* It's simpler to write than `_` (underscore)
-* It's arguably just as clear, if not more, than other options
-* Whitespace is significant and it's not allowed that `x-y` (identifier) and `x - y` (subtraction) are the same
-
-Here's a few examples:
-```
-x
-my-staff
-x-0
-x-1
-x-2
-x+y
-x+y-2z
-x'
-x''
-```
 ### What isn't consistent
-#### `=` is ambiguous in diff contexts
+`=` is ambiguous in diff contexts
 * Concept is consistent (relate LH to RH)
 * Precedence is ambiguous
   * But can be disambiguated by context or manually
 * Only a few variants
-  * Should do what's obvious and expects in each case: Block, Map, Condition, Function Arg, 
+  * Should do what's obvious and expects in each case: Block, Map, Condition, Function Arg
+
 #### Automattic closing at `\n`
 #### Automattic closing at `DEDENT`
 #### Different forms (multiline to inline)
@@ -506,53 +743,6 @@ x''
   * Inline makes hard to clear see structure, heirarchy, and flow
 * Mimics shape of data and use-case
 * All transformed to multiline internally
-
-## Functions
-* TODO
-  * Different types of call syntax
-    * f(x, y, z)
-    * f x, y ,z
-    * f g h x === f(g(h(x)))
-    * f
-        x
-        y
-        z
-    * UFCS
-      * obj.f(x, y, z) === obj.f x, y, z
-    * open-paren
-      * f( x, y
-      * f(( x, y
-    * fixity
-      * infix: 1 + 2 + 3
-      * prefix: !x
-      * suffix: x++
-  * Arity
-    * nullary
-    * unary
-    * binary
-    * varargs
-    * curry?
-  * Not all forms always defined?
-    * or precedence (eg `//` inline explicit before body)
-  * 
-
-### Custom Function Identifier
-The function identifier isn't limited to alpha-numeric as it's often useful to allow for syntax to be customized.
-
-For example, it'd be nice to do customize a comment:
-```
-//(mode = markdown)
-  ### Comment Header
-  * Point 1
-  * Point 2
-  * Point 3
-```
-
-## Juxtaposition
-
-## Comment
-
-
 
 ### Definition
 ### Application (as a specific example of juxtaposition?)
@@ -578,14 +768,9 @@ For example, it'd be nice to do customize a comment:
 ## Examples
 
 ## Sugar
-TODO
 * Anonymous tree head w/ `-` and `*`
-
-## TODO
----
 * Say anything about const-ness? propogate constness? or foreign convern?
 * Codegen when prefix? or foreign concern? ie this only defines it as infix?
-* First character/operator is special b/c defines how rest is interpreted?
 * Reserved
 * Ambiguities
 * Warts
@@ -621,16 +806,44 @@ TODO
 * Tree anonymous head `-` and `*`?
 * Dive into
 * Limitations
-* Limitations
-* Comments
-* Syntax operators
+* Syntax operators (eg `//`)
 * Multiple forms
   * eg differentiate comment syntax `//` modes from input
 * Parts of a fn-like thing
 * Precedence
-* `=` vs `:=`
-  * For shadow and not?
 * Ways to call a function and how it affects implementation choice?
 * Keywords
   * Nested? Sibling?
+* differences between:
+  ```
+  a.b.c.f()                              // Invoke 'f'
+  a.b.c.f() = 0                          // 
+  a.b.c.f(x = 0)                         // 
+  a.b.c.f(x = 0, y = 1, z = 2)           // 
+  a.b.c.f(x, y, z) = 0, 1, 2             // select 'x, y, z' and assign to '0, 1, 2'
+  a.b.c.f(x = 0, y = 1, z = 2) = 3, 4, 5 // 
+  ```
+* Interperet as? and how this relates to interpretation and evaluation?
 * 
+
+### Grouping
+Parenthesis also group elements together.
+
+Consider a conditional:
+```
+if
+  x > 0
+  y > x
+  z > y
+then
+  log "passed:", x, y, z
+else
+  log "failed:", x, y, z
+```
+
+this could be made inline:
+```
+if (x > 0, y > x, z > y) then (log "passed:", x, y, z) else (log "failed:", x, y, z)
+```
+
+## Types, Traits, and Interface
