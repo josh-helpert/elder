@@ -34,6 +34,8 @@ markdown: kramdown
 #theme: jekyll-theme-midnight
 #remote_theme: pages-themes/midnight
 #remote_theme: jekyll-theme-midnight
+
+theme: jekyll-rtd-theme
 remote_theme: rundocs/jekyll-rtd-theme
 
 # Exclude from processing.
