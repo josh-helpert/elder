@@ -31,7 +31,7 @@ github_username:  jekyll
 
 # Build settings
 markdown: kramdown
-theme: jekyll-theme-slate
+theme: jekyll-theme-midnight
 #remote_theme: pages-themes/midnight
 #remote_theme: jekyll-theme-midnight
 plugins:
