@@ -2,7 +2,7 @@
 layout: default
 title: Elder Syntax by Example
 description: Learn by valid, invalid, and other language examples
-permalink: /syntax-examples
+permalink: /elder/syntax-examples
 ---
 
 This document overviews syntax examples without much discussion and is meant as a quick overview.

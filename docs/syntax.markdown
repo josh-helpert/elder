@@ -2,7 +2,7 @@
 layout: default
 title: Elder Syntax
 description: A minimal, data-oriented, and expressive syntax
-permalink: /syntax
+permalink: /elder/syntax
 ---
 
 // Elder syntax aims to 
