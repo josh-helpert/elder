@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Elder Syntax by Example
+title: Syntax by Example
 description: Learn by valid, invalid, and other language examples
 permalink: syntax-examples
 ---
@@ -369,6 +369,24 @@ TODO
 * Operator/Function
 * Comptime
   * `#` w/n expression or start of line will invoke at comptime
+* Precedence
+  * components
+    * parenthesis
+    * unary-prefix (eg `!x`)
+    * unary-postfix (eg `x!`)
+    * infix (not `=`)
+    * infix (`=`)
+    * juxtaposition (`f x` `f x, y, z` `3 4 x y`)
+    * r-hand of infix `=`
+    * l-hand of infix `=`
+    * `,` comma
+    * `;` semicolon
+    * `#` comptime
+    * `:` `/` `.` relation spaces (unary?)
+    * range (eg `4..7` `4..<7`)
+    * shadow (`:=`)
+    * sugar (eg `for x in xs`, `4..f(x)`)
+    * 
 * data literal vs reference vs assign
   * gap between head and rest?
   * eg 
@@ -376,6 +394,8 @@ TODO
     x, y = 4, 5             // select x, y then assign 4, 5
     (x = 4, y = 5)          // 
     (x, y = 4, 5)           // 
+    x = 4, y = 5            // 
+    x = 4; y = 5            // 
     x:y = 4                 // select meta 'y' in 'x' then assign 4
     x :y = 4, :z = 5        // data literal
     x :(y = 4, z = 5)       // data literal
@@ -401,6 +421,12 @@ TODO
 * difference of:
   ```
   f(x, y, z)
+
+  f( x, y, z
+
+  f(( x, y, z
+
+  f (x, y, z)
 
   f x, y, z
 
