@@ -131,7 +131,7 @@ There's a few cases where the values is:
     b
     c
   ```
-  * This is equivalent to `x = (a, b, c)`??? That is the sequence `a, b, c` since `a, b, c` are all immediate children of `x`
+  * This is equivalent to `x = (a, b, c)`. This is b/c the sequence `a, b, c` are all immediate children of `x`
   * Often useful when you want to store a literal, multi-valued, container-like (eg `List`, `Sequence`, `Map`)
 
 ## Relator
@@ -245,7 +245,7 @@ which is read as:
 
 By default, selecting a value will return it's result.
 
-It's also useful in assignment:
+It's also useful in when paired with equals syntax:
 ```
 o.b:x = 3
 ```
@@ -389,7 +389,7 @@ my-element.style.css.(width, height) = 100%, 20px
 ```
 These variations are made available to fit various use-cases. The most clear and terse should be preferred.
 
-## Destructure
+## Simple Destructure
 ------------------------------------------------------------------------------------------------------------
 
 Destructuring is useful as it allows us to deal directly with the structure of data and is generally more terse.
@@ -620,7 +620,7 @@ The only escape character is `\`. It can be used in multiple ways:
 ## Reserved
 ------------------------------------------------------------------------------------------------------------
 
-We reserve ...
+We reserve some identifiers for future use. TODO...
 
 
 ## Sugar
@@ -709,9 +709,21 @@ Rules:
 ## Schema
 ------------------------------------------------------------------------------------------------------------
 
-## Issues
+## Relative Precedence
 ------------------------------------------------------------------------------------------------------------
 
+## Issues
+------------------------------------------------------------------------------------------------------------
+* Mixing destructuring (`==`) w/ cases which wouldn't normally destructure (but sould chain or something else).
+  * There may be other interactions as well.
+  * Consider:
+    ```
+    o.(a, b, c) == 1, 2, 3
+
+    o.(a, b = 1, c) == 1, 2, 3
+
+    o.(a = 1, b = 2, c = 3) = 4, 5, 6
+    ```
 
 
 
@@ -960,13 +972,6 @@ o .x = 1, .b, .c = 1, 2 // Does this mean b, c = 1, 2 or o?
 
 
 
-### Chain selection
-
-o.(x, y, y:a, y:(t, u)) = 1, 2, 4, 6, 7
-
-o.(x, y).y(:a, .(t, u)) = 1, 2, 4, 6, 7
-
-o.(x, y), o.y(:a, .(t, u)) = 1, 2, 4, 6, 7
 
 
 
@@ -1208,6 +1213,9 @@ Age :(type = Int, min = 0)
 ### Destructure
 * Complex?
   * Incomplete forms?
+* Wildcards
+* Skip `_`
+  * Skip multiple? `_(2)`
 * Will destructure automatically if:
   * No values are assigned?
   * Is totally ambiguous L-hand
@@ -1265,7 +1273,6 @@ o .(a, b, c = 1, 2, 3), :(x, y, z = 4, 5, 6)
 `o .x .y .z`
 
 `o .x, .y, .z`
-
 
 ### Distribute
 
@@ -1357,13 +1364,10 @@ o.(x, y = 1, 2)
 o.(x = 1, y = 2) = 3, 4
 o.(x, y = 1, 2) = 3, 4
 
-## Chaining
-### Destructure and Chaining Interaction
-TODO: Consider defining interaction. eg differences between:
-```
-o.(a, b, c) == 1, 2, 3
+### Advanced Destructure
 
-o.(a, b = 1, c) == 1, 2, 3
+o.(x, y, y:a, y:(t, u)) = 1, 2, 4, 6, 7
 
-o.(a = 1, b = 2, c = 3) = 4, 5, 6
-```
+o.(x, y).y(:a, .(t, u)) = 1, 2, 4, 6, 7
+
+o.(x, y), o.y(:a, .(t, u)) = 1, 2, 4, 6, 7
