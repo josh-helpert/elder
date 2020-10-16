@@ -85,9 +85,16 @@ x
 
 Equals (`=`) is a syntax which captures the pattern of relating ***L-hand*** to a ***R-hand***.
 
-The precise relationship between ***L-hand*** and ***R-hand*** varies with the context it's defined in like: assignment, mapping between names and values, key-value entry, etc.
+The precise relationship between ***L-hand*** and ***R-hand*** varies with the context it's defined in (eg assignment, mapping between names and values, key-value entry)
 
-We can model a map using `=` like:
+We can model definition or assignment:
+```
+x = 1
+```
+This is read as:
+* name `x` relates to value `1`
+
+We can model a map:
 ```
 obj
   a = 1
@@ -95,12 +102,13 @@ obj
   c = 3
 ```
 This is read as:
-* `obj` had 3 children
+* name `obj` has 3 children
 * the 1st child is `a = 1`
+  * name `a` relates to value `1`
 * the 2nd child is `b = 2`
+  * name `b` relates to value `2`
 * the 3rd child is `c = 3`
-
-[//]: # (TODO: Consider how to describe `a = \n` form where R-hand in body? or `a \n =` form where it acts like a relator?)
+  * name `c` relates to value `3`
 
 ### Equals Newline
 Sometimes it makes sense to not have the value on the same line as the `=`.
@@ -139,7 +147,7 @@ There's a few cases where the values is:
 
 A ***Relator*** is a syntactical tool which models the ***relation*** between a ***target*** and a ***descriptor***. Customizing the syntax allows developers to add structure to the syntax without the need of macros (although more constrained than what macros provide).
 
-This concept is usually hard coded within most languages like in:
+This concept is usually hard coded within most languages such as:
 * `C++`
   * accessing a `Namespace` uses `::` and is used like `my_namespace::my_val`
   * accessing a `Struct` field uses `.` and is used like `my_stuct.field` or `my_struct.field = 1`
@@ -325,14 +333,6 @@ as a inline literal:
 ```
 o .(a = 1, b = 2, c = 3), :(x = 4, y = 5, z = 6)
 ```
-
-
-
-
-
-
-
-
 
 ### Example - HTML Generation
 Parenthesis especially help when combining multiple relators to describe more complex structure. Consider the template psuedo code:
@@ -602,8 +602,14 @@ The only escape character is `\`. It can be used in multiple ways:
   "x + y is \(x + y)"
   ```
 
-## Identifier
+## Identifier (in progress)
 ------------------------------------------------------------------------------------------------------------
+
+In order to model concepts like operators, prefix/suffix fixity, relators, literals, etc. it's important that:
+* it's very clear what are allowed identifiers for each type
+* concepts which combine into single words use orthogonal characters
+* deliniation?
+* 
 
 * cases
   * relator
@@ -617,13 +623,18 @@ The only escape character is `\`. It can be used in multiple ways:
 
 
 
-## Reserved
+## Reserved (in progress)
 ------------------------------------------------------------------------------------------------------------
 
 We reserve some identifiers for future use. TODO...
 
+* comptime `#`
+  * `#do`
+* `do`
+* 
 
-## Sugar
+
+## Sugar (in progress)
 ------------------------------------------------------------------------------------------------------------
 
 ### Operators act-like expanded tree node
@@ -665,8 +676,6 @@ x
   c
 ```
 
-### Type-like syntax
-How to model `x:Int = 4` which expands to `x:(type = Int) = 4`?
 
 ### Anonymous Item
 There are cases where we want to represent a series of elements without a meaningful name.
@@ -702,28 +711,73 @@ Rules:
 
 [//]: # ( These are optional; when not present the values are interpretable as that type regardless. They are a means of adding constraints (like a Schema) )
 
+* Containers
+  * Sequence `()`
+  * List `[]`
+  * Map `{}`
+  * String
+    * inline `""`
+    * block `"""`
+  * Code
+    * inline `` ` ``
+    * block ```` ``` ````
+* Primitives
+  * Integral
+  * Floating Point
+  * Fixed Point
+  * Constants
+    * PI
+    * 
+  * 
+* 
 
 ## Types
 ------------------------------------------------------------------------------------------------------------
 
+Types are useful when modeling data as it constraints the possible values the variable may contain.
+
+When creating a type, there are a few rules:
+* Must start w/ an upper-case alpha character (really necessary? can't we derive if it starts w/ a numeric?)
+* 
+
+### Sugar
+How to model `x:Int = 4` which expands to `x:(type = Int) = 4`?
+
 ## Schema
 ------------------------------------------------------------------------------------------------------------
 
-## Relative Precedence
+## Precedence
 ------------------------------------------------------------------------------------------------------------
+
+### Global Precedence
+### Relative Precedence
 
 ## Issues
 ------------------------------------------------------------------------------------------------------------
-* Mixing destructuring (`==`) w/ cases which wouldn't normally destructure (but sould chain or something else).
+
+* Mixing destructuring (`==`) w/ cases which wouldn't normally destructure (but should chain or something else).
   * There may be other interactions as well.
   * Consider:
     ```
+    o.(a, b, c) =  1, 2, 3
     o.(a, b, c) == 1, 2, 3
 
+    o.(a, b = 1, c) =  1, 2, 3
     o.(a, b = 1, c) == 1, 2, 3
 
-    o.(a = 1, b = 2, c = 3) = 4, 5, 6
+    o.(a = 1, b = 2, c = 3) =  4, 5, 6
+    o.(a = 1, b = 2, c = 3) == 4, 5, 6
+
+    o.(a, b), t.(x, y) =  1, 2, 3, 4
+    o.(a, b), t.(x, y) == 1, 2, 3, 4
+
+    o.(a = 1, b), t.(x = 3, y) =  2, 4
+    o.(a = 1, b), t.(x = 3, y) == 2, 4
+
+    o.(a = 1, b = 2), t.(x = 3, y = 4) =  5, 6
+    o.(a = 1, b = 2), t.(x = 3, y = 4) == 5, 6
     ```
+  * since `x == y` is actually `(x) = (y)` doesn't that mean there shouldn't be any partial forms?
 
 
 
@@ -740,6 +794,8 @@ Rules:
 
 ## TODO
 ------------------------------------------------------------------------------------------------------------
+
+## Compare to other syntaxes
 
 ### Paths and selectors
 
