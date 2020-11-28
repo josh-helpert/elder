@@ -1204,3 +1204,61 @@ and a few counter examples which won't chain:
 * Values w/n a range (3..5)
 * Type
 * Shape of data (*:type = Any)
+
+### Get value vs reference
+x = 4   // Def x
+y = x   // Ref x
+z = x() // Value x
+
+## More Destructuring
+------------------------------------------------------------------------------------------------------------
+
+### TODO: matching arity, multiples, skip, ...
+
+## Parenethes and Brackets
+
+* Concat
+* A Block which groups statements, often unevaluated, together:
+  * inline conditional `if (x > 1 and y < 2) then (log x) else (log y)`
+  * inline while `while (x > 0) (log x; x -= 1)`
+  * group data together like `((Billy Bob), 35)` as long as it's not evaluated
+
+## Type signature
+* arity and types
+  * (3 * Bool) === 3 bool expression
+  * (Bool, Int, Bool) === sequence of Bool, Int, Bool
+  * [3 * Bool] === 3 bool expression w/n brackets
+
+## Parens or blocks determine evaluation
+* eg `for ()` vs `for []`
+* form, concat, etc. (like Rebol) don't work for `()`
+* block is both a list and a type of execution. How to know which acting as?
+  * determined by ctx, parent, interpretation, etc.?
+
+### Container and Type meaning
+Body for container
+  Containers are interpretation contexts
+
+### Example - Covert Parenthesis and Blocks
+
+It's trivial to covert from parentheses (really just a sequence) into a block. You just have to wrap it w/ brackets:
+```
+x = (1, 2, 3)
+y = [ x ] => [ (1, 2, 3) ] => [ 1, 2, 3 ]
+```
+
+The opposite, brackets to parentheses, is more complex as we essentially want to get the body of the block. 
+
+
+Parentheses to Block
+
+Block to Parentheses
+
+
+
+
+* Block relation to indentation
+* Anon item
+* examples
+* edge-cases
+  * conditional `if (x > 0 and y < 10) then [log x; x] else [log y; y]`
