@@ -8,14 +8,21 @@ permalink: syntax
 Elder syntax's goal is to unify homoiconic and serialization data-oriented syntax structure as tersely as possible in order to create a general purpose syntax. Elder core language uses the Elder syntax as it's choice of syntax much like most LISP implementation uses S-expressions.
 
 Elder syntax is a general purpose syntax which competes with a variety of syntax use-cases:
-* homoiconic syntaxes like s-expressions, sweet-expressions, o-expressions, rebol
+* homoiconic syntaxes like s-expressions, sweet-expressions, o-expressions, Rebol syntax
 * serialization and data-modeling
   * external schema and types like StrictYAML
   * syntax and literal types like JSON, YAML, SDLang, OGDL
   * schema like InternetObject, OGDL
   * custom DSL like Pug, SASS, Markdown
 
-Implementors decide the level of complexity of the syntax by opting into dialects that suite their needs.
+Implementors decide the level of complexity of the syntax by opting into dialects that suite their needs. Currently these are the features one may include:
+* core: Required for any implementation as it contains the basics of the syntax
+* types and literals: Adds type-like constraints including types, interfaces, traits, etc. and some sugar to represent the most common data representations
+* schema: Adds schema descriptions
+* DSL: Adds syntax and sugar to create DSLs more easily
+* exec: Adds remaining syntax and sugar to create a full language
+
+For example, to emulate JSON you would need to incorporate ***core and literal*** while for a different approach to emulate OGDL you must incoporate ***core, literals, and schema***.
 
 This document only describes the ***Elder syntax*** itself. It doesn't tell you about the ***semantics*** (meaning) of the syntax. The semantics are added once the syntax is used w/n a specific context. For example, a sequence within the context of a HTML document are HTML nodes. Clarifying the semantics and other language uses are part of the core language and not described here as they're beyond the scope of the syntax. However, to help, there are some examples with psuedo-code at the end.
 
@@ -296,10 +303,10 @@ html/body/header.style.css.
 ```
 We use paths to collapse the heirarchy from above to what we really are concerned about.
 
-## Parenthesis
+## Parentheses
 ------------------------------------------------------------------------------------------------------------
 
-Although we strive for tersness, parenthesis are essential. They are a tool for a developer to specify information to the compiler but are not within the grammar.
+Although we strive for tersness, parentheses are essential. They are a tool for a developer to specify information to the compiler but are not within the grammar.
 
 Let's start with a simple example where we want to relate `x` and the sequence `a, b, c` you may expect something like this to work:
 ```
@@ -314,15 +321,15 @@ b
 c
 ```
 
-To get what we want we have to add parenthesis to alter the precedence:
+To get what we want we have to add parentheses to alter the precedence:
 ```
 x = (a, b, c)
 ```
 An important point is that the `()` don't make `a, b, c` a sequence, the `,` does. Instead, the `()` alters the precedence my making `a, b, c` into a group.
 
-Think of parenthesis as a way to create a temporary group to provide information to the software (and human) reader. Parenthesis group it's contents together but will often be dropped when the reader encounters them.
+Think of parentheses as a way to create a temporary group to provide information to the software (and human) reader. Parentheses group it's contents together but will often be dropped when the reader encounters them.
 
-Parenthesis perform multiple duties depending on how they're used:
+Parentheses perform multiple duties depending on how they're used:
 * Like in most languages they're the highest precedence:
   * expression  `(1 + 2) * 3`
   * infix operator `x = (1, 2, 3)`
@@ -332,42 +339,48 @@ Parenthesis perform multiple duties depending on how they're used:
   * function `f(1, 2)`
   * relator data definition `o.(a, b = 1, c)` or `o .(a, b = 1, c)`
   * relator selection `o.(a, b, c)`
-* A Block which groups statements, often unevaluated, together:
-  * inline conditional `if (x > 1 and y < 2) then (log x) else (log y)`
-  * inline while `while (x > 0) (log x; x -= 1)`
 
-Parenthesis we're designed to work in a compatible way between the multiple ways they're used. Often the developer is forced to use parenthesis in cases where it's ambiguous, rare, or to be consistent with other syntax. For example, `x = (1, 2, 3)` is required to describe defining a sequence to also make it compatible with other literals (we'll go in depth later):
+Parentheses we're designed to work in a compatible way between the multiple ways they're used. Often the developer is forced to use parentheses in cases where it's ambiguous, rare, or to be consistent with other syntax. For example, `x = (1, 2, 3)` is required to describe defining a sequence to also make it compatible with other literals (we'll go in depth later):
 ```
-a = (1, 2, 3)             // Sequence
-b = [4, 5, 6]             // List
-c = {x = 7, y = 8, z = 9} // Map
+// Sequence
+a = (1, 2, 3)
+
+// List
+b = [4, 5, 6]
+
+// Map
+c = {x = 7, y = 8, z = 9}
 ```
 
-### Parenthesis are not a container
+### Parentheses are not Data
 
-Since parenthesis are not a container, they do have a effect that's novel. Consider the following psuedo code:
+Since parentheses are more like hints, they're generally not inspectable as they're automatically reduced and result in a unwrapped sequence. When composed, this has an effect that's novel.
+
+Consider the following psuedo code:
 ```
 x = (1, 2, 3)
 y = (4, 5, 6)
 z = (x, y)
 ```
 
-The value of `z` won't be 2 sequences like one may expect. Instead here's the process which starts by substitution in place:
+The value of `z` won't be 2 sequences like one may expect. Let's go through it step by step.
+
+The process which starts by substitution in place:
 ```
 z = ((1, 2, 3), (4, 5, 6))
 ```
 
-Then the inner expression is reduced:
+Since there is nothing left to do w/n the inner expression, the parentheses are reduced:
 ```
 z = (1, 2, 3, 4, 5, 6)
 ```
-Since there's nothing left to do with the inner expression the parenthesis are dropped.
+Notice that although we started with several sequences, we end up w/ a flat sequence.
 
-This may seem weird but it's a natural extension to do what we do in other languages where the options are usually:
+This may seem weird but it's a natural extension to do what we do in other languages. It's common in other languages to:
 * return a single item like `4`, `8.7`, `'c'`, `"Hello"`
 * return 0 to many items w/n some type of container like `[1, 2, 3]`, `{x, y, z}`
 
-What parenthesis allow us to do is add another category which act like multiple, single items w/o a container. This allows us to avoid extra wrapping and unwrapping of data which leads to more visual noise.
+What parentheses allow us to do is add another category which act like multiple items w/o a container. This allows us to avoid extra wrapping and unwrapping of data which leads to more visual noise.
 
 For example, consider this psuedo code where we use an external function to construct the properties of a HTML-like element:
 ```
@@ -404,7 +417,7 @@ Using our existing syntax we can represent this inline as a literal but it's rat
 o .a = 1, .b = 2, .c = 3, :x = 4, :y = 5, :z = 6
 ```
 
-Using parenthesis we can express this in multiple forms which more clearly expresses the natural structure of the data. As a multiline literal:
+Using parentheses we can express this in multiple forms which more clearly expresses the natural structure of the data. As a multiline literal:
 ```
 o
   .(a = 1, b = 2, c = 3)
@@ -418,7 +431,7 @@ o .(a = 1, b = 2, c = 3), :(x = 4, y = 5, z = 6)
 
 ### Example - HTML Generation
 
-Parenthesis especially help when combining multiple relators to describe more complex structure. Consider the template psuedo code:
+Parentheses especially help when combining multiple relators to describe more complex structure. Consider the template psuedo code:
 ```
 div .(id = "intro", class = "spashscreen", style.css.(width = 100%, height = 20px)), :visible-if = "is-first-view"
   h1 .class = "title"
@@ -469,7 +482,80 @@ my-element.style.css.height = 20px
 // or, as assignment w/ selection
 my-element.style.css.(width, height) = 100%, 20px
 ```
-These variations are made available to fit various use-cases. The most clear and terse should be preferred.
+These variations are made available to fit various use-cases. The form which best models the data it's describing and terse should be preferred.
+
+## Blocks
+------------------------------------------------------------------------------------------------------------
+
+Much like parentheses, blocks (notated with brackets `[]`) wrap a sequence but since a block is a container they are not reduced automatically.
+
+This makes blocks appropriate to model:
+* List which is just an isolated sequence
+  * inline
+    ```
+    x = [1, 2, 3]
+    ```
+  * nested inline
+    ```
+    x = [1, [2, 3, 4], 5]
+    ```
+  * multiline
+    ```
+    x = 
+      1
+      [
+        2
+        3
+        4
+      5
+    ```
+* Unevaluted code
+  * Often represent unevaluated code which is evaluated step-by-step
+  * Differs from parentheses (which return each child) in that you can pick what is the result (often the last child)
+    * This allows you to execute multiple statements (each child) while only returning parts of the sequence instead of each child.
+
+Notice that, just like parentheses, blocks don't make a sequence (the `,` do). Instead they are a container around the sequence which provides context in how to interpret the sequence.
+
+If you need to pick between parentheses or blocks here's a few general rules:
+* Use parenthesis if you:
+  * Want the result to be a sequence of values
+  * Want to change the precedence
+  * Don't want to unwrap the result so it'll merge with the location it's used it (whether a function or variable result)
+* Use blocks if you:
+  * Want to isolate a sequence even when composed
+  * Execute a series of steps and only return the result of one of those steps. Which is how a Block is often evaluated.
+  * Pick some values, but not all, of the children.
+
+### Example - Composing
+
+Consider the following example:
+```
+x = (1, 2, 3)
+y = [1, 2, 3]
+```
+This is read as:
+* `x` is a sequence of `1, 2, 3`
+* `y` is a block containing a sequence of `1, 2, 3`
+
+When used, the differences are clear:
+```
+a = (0, x, 4)
+b = (0, y, 4)
+```
+
+the next step is substitute in place:
+```
+a = (0, (1, 2, 3), 4)
+b = (0, [1, 2, 3], 4)
+```
+
+which reduces `a` further to the final result:
+```
+a = (0, 1, 2, 3, 4)
+b = (0, [1, 2, 3], 4)
+```
+
+Notice how the inner block isn't reduced while the parentheses are.
 
 ## Simple Destructure
 ------------------------------------------------------------------------------------------------------------
@@ -533,10 +619,12 @@ For each pattern, there's a few effects to consider:
 * When used as a node in a tree what is returned by the subtree.
   * For example, the middle element is a sequence which is both a subtree and subexpression. It is the sequence `(b, c)`:
     ```
-    (a, (b, c == 1, 2), c)
+    (a, (b, c == 1, 2), d)
     ```
-    * TODO: Is the result `(a, b, c, d)` or `(a, (b, c), d)`? How would it be differentiated as a subexpression/subsequence?
-      * Like other cases, it's about the parent vs the children? the container vs the contents? ...
+    this expands to:
+    ```
+    a, b = 1, c = 2, d
+    ```
 
 These are the common patterns along with the effects they will produce:
 * Multiline Literal
@@ -769,8 +857,6 @@ Here's a few examples with the names brought into scope:
 ## Composing Destructure
 ------------------------------------------------------------------------------------------------------------
 
-### TODO: matching arity, multiples, skip, ...
-
 This composes as well like you'd expect. Consider a slightly more complex example with nested destructuring:
 ```
 a, (b, c == 1, 2) == (x, y == 3, 4), z
@@ -795,7 +881,8 @@ finally evaluates to:
 ------------------------------------------------------------------------------------------------------------
 
 There is only one syntax for comments `//`.
-Like most choices, this syntax serves multiple purposes and is done for consistency across codebases to avoid inconsequential variants and minimize holy wars.
+
+Like most choices, this syntax serves multiple purposes and is done for consistency across codebases to avoid inconsequential variants.
 
 Comments function in multiple ways:
 * Comments a line
@@ -808,6 +895,7 @@ Comments function in multiple ways:
   div
     .class = header //( My header ) main
   ```
+  * Notice how parentheses follow the pattern of start/stop throughout the syntax including comments
 * Comments until the end of a line
   ```
   div 
@@ -835,7 +923,7 @@ The only escape character is `\`. It can be used in multiple ways:
   ```
   my\ complex\ name = 1
   ```
-* Escapes inline
+* Escapes symbol
   ```
   name = Jane
 
@@ -968,6 +1056,7 @@ Rules:
   * Sequence `()`
   * List `[]`
   * Map `{}`
+    * names w/o values are interpreted as just keys? w/ what value? Depends on type and DSL?
   * String
     * inline `""`
     * block `"""`
@@ -1000,7 +1089,7 @@ How to model `x:Int = 4` which expands to `x:(type = Int) = 4`?
 ------------------------------------------------------------------------------------------------------------
 
 TODO
-* Look at other solutions: StrictYAML, OGDL, OpenInternet, GraphQL, other schema definition systems?
+* Look at other solutions: StrictYAML, OGDL, InternetObject, GraphQL, other schema definition systems?
 * 
 
 ## Precedence
