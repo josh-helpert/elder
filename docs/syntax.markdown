@@ -24,6 +24,8 @@ Implementors decide the level of complexity of the syntax by opting into dialect
 
 For example, to emulate JSON you would need to incorporate ***core and literal*** while for a different approach to emulate OGDL you must incoporate ***core, literals, and schema***.
 
+[//]: # (TODO: Explain why homoiconic/data-oriented language chosen)
+
 This document only describes the ***Elder syntax*** itself. It doesn't tell you about the ***semantics*** (meaning) of the syntax. The semantics are added once the syntax is used w/n a specific context. For example, a sequence within the context of a HTML document are HTML nodes. Clarifying the semantics and other language uses are part of the core language and not described here as they're beyond the scope of the syntax. However, to help, there are some examples with psuedo-code at the end.
 
 ## Sequence
@@ -306,7 +308,9 @@ We use paths to collapse the heirarchy from above to what we really are concerne
 ## Parentheses
 ------------------------------------------------------------------------------------------------------------
 
-Although we strive for tersness, parentheses are essential. They are a tool for a developer to specify information to the compiler but are not within the grammar.
+Although we strive for tersness, parentheses are essential. Parentheses are unique in that they are used within the syntax and grammar but they are not data. They are to be used to provide information to a developer, compiler, and structure data/code but they have no data representation themselves. This makes them very useful to be a zero cost way to represent grouping of information as they are a syntactical tool and then are erased before the data/code is evaluated and executed.
+
+Think of parentheses as a way to create a temporary group to provide information to the software (and human) reader. Parentheses group it's contents together but will often be dropped when the reader encounters them.
 
 Let's start with a simple example where we want to relate `x` and the sequence `a, b, c` you may expect something like this to work:
 ```
@@ -327,75 +331,18 @@ x = (a, b, c)
 ```
 An important point is that the `()` don't make `a, b, c` a sequence, the `,` does. Instead, the `()` alters the precedence my making `a, b, c` into a group.
 
-Think of parentheses as a way to create a temporary group to provide information to the software (and human) reader. Parentheses group it's contents together but will often be dropped when the reader encounters them.
-
-Parentheses perform multiple duties depending on how they're used:
+Parentheses perform multiple duties depending on how they're used using our current syntax:
 * Like in most languages they're the highest precedence:
-  * expression  `(1 + 2) * 3`
   * infix operator `x = (1, 2, 3)`
 * Is the start `(` and stop `)` of an operator, relator, function, etc.:
-  * expression `(1 + 2)`
-  * operator `+(1, 2)`
-  * function `f(1, 2)`
   * relator data definition `o.(a, b = 1, c)` or `o .(a, b = 1, c)`
   * relator selection `o.(a, b, c)`
 
-Parentheses we're designed to work in a compatible way between the multiple ways they're used. Often the developer is forced to use parentheses in cases where it's ambiguous, rare, or to be consistent with other syntax. For example, `x = (1, 2, 3)` is required to describe defining a sequence to also make it compatible with other literals (we'll go in depth later):
-```
-// Sequence
-a = (1, 2, 3)
+The underlying pattern of parentheses is that they:
+* group their contents together
+* depending on how they used, the effect varies (eg `o.(a = 1)` means something different than `x = (1, 2, 3)` but the pattern is the same of grouping their contents together)
 
-// List
-b = [4, 5, 6]
-
-// Map
-c = {x = 7, y = 8, z = 9}
-```
-
-### Parentheses are not Data
-
-Since parentheses are more like hints, they're generally not inspectable as they're automatically reduced and result in a unwrapped sequence. When composed, this has an effect that's novel.
-
-Consider the following psuedo code:
-```
-x = (1, 2, 3)
-y = (4, 5, 6)
-z = (x, y)
-```
-
-The value of `z` won't be 2 sequences like one may expect. Let's go through it step by step.
-
-The process which starts by substitution in place:
-```
-z = ((1, 2, 3), (4, 5, 6))
-```
-
-Since there is nothing left to do w/n the inner expression, the parentheses are reduced:
-```
-z = (1, 2, 3, 4, 5, 6)
-```
-Notice that although we started with several sequences, we end up w/ a flat sequence.
-
-This may seem weird but it's a natural extension to do what we do in other languages. It's common in other languages to:
-* return a single item like `4`, `8.7`, `'c'`, `"Hello"`
-* return 0 to many items w/n some type of container like `[1, 2, 3]`, `{x, y, z}`
-
-What parentheses allow us to do is add another category which act like multiple items w/o a container. This allows us to avoid extra wrapping and unwrapping of data which leads to more visual noise.
-
-For example, consider this psuedo code where we use an external function to construct the properties of a HTML-like element:
-```
-f = Fn () -> Seq
-  (width = 100%, height = 20px)
-
-header .(f(), background-color = FFF)
-footer .(f(), background-color = 000)
-```
-
-This results in what you'd hope w/o having to unwrap the function result:
-```
-header .(width = 100%, height = 20px, background-color = FFF)
-footer .(width = 100%, height = 20px, background-color = 000)
-```
+Unlike most languages, nothing is automatically dropped or reduced. Instead, certain usages, operators, and functions have consistent rules as to how they reduce. This is slightly more complex than automatically dropping everything but it also allows it to be better represent both data and code.
 
 ### Example - Common Structure
 
@@ -484,80 +431,7 @@ my-element.style.css.(width, height) = 100%, 20px
 ```
 These variations are made available to fit various use-cases. The form which best models the data it's describing and terse should be preferred.
 
-## Blocks
-------------------------------------------------------------------------------------------------------------
-
-Much like parentheses, blocks (notated with brackets `[]`) wrap a sequence but since a block is a container they are not reduced automatically.
-
-This makes blocks appropriate to model:
-* List which is just an isolated sequence
-  * inline
-    ```
-    x = [1, 2, 3]
-    ```
-  * nested inline
-    ```
-    x = [1, [2, 3, 4], 5]
-    ```
-  * multiline
-    ```
-    x = 
-      1
-      [
-        2
-        3
-        4
-      5
-    ```
-* Unevaluted code
-  * Often represent unevaluated code which is evaluated step-by-step
-  * Differs from parentheses (which return each child) in that you can pick what is the result (often the last child)
-    * This allows you to execute multiple statements (each child) while only returning parts of the sequence instead of each child.
-
-Notice that, just like parentheses, blocks don't make a sequence (the `,` do). Instead they are a container around the sequence which provides context in how to interpret the sequence.
-
-If you need to pick between parentheses or blocks here's a few general rules:
-* Use parenthesis if you:
-  * Want the result to be a sequence of values
-  * Want to change the precedence
-  * Don't want to unwrap the result so it'll merge with the location it's used it (whether a function or variable result)
-* Use blocks if you:
-  * Want to isolate a sequence even when composed
-  * Execute a series of steps and only return the result of one of those steps. Which is how a Block is often evaluated.
-  * Pick some values, but not all, of the children.
-
-### Example - Composing
-
-Consider the following example:
-```
-x = (1, 2, 3)
-y = [1, 2, 3]
-```
-This is read as:
-* `x` is a sequence of `1, 2, 3`
-* `y` is a block containing a sequence of `1, 2, 3`
-
-When used, the differences are clear:
-```
-a = (0, x, 4)
-b = (0, y, 4)
-```
-
-the next step is substitute in place:
-```
-a = (0, (1, 2, 3), 4)
-b = (0, [1, 2, 3], 4)
-```
-
-which reduces `a` further to the final result:
-```
-a = (0, 1, 2, 3, 4)
-b = (0, [1, 2, 3], 4)
-```
-
-Notice how the inner block isn't reduced while the parentheses are.
-
-## Simple Destructure
+## Destructure
 ------------------------------------------------------------------------------------------------------------
 
 Destructuring is useful as it allows us to deal directly with the structure of data and is generally more terse.
@@ -600,264 +474,9 @@ Using the new syntax, there's a few ways to make this example parse as a destruc
   x, y == 1, z
   ```
 
-## Common Patterns
-------------------------------------------------------------------------------------------------------------
+### Nested Destructure
 
-At this point we've introduced all the basic syntax needed to describe the common syntactical patterns.
-
-For each pattern, there's a few effects to consider:
-* When a pattern in used next to it's siblings; what name(s) are visible to other siblings.
-  * For example, below `x` and `y` are siblings but `z` isn't:
-    ```
-    a
-      x
-      y
-    b
-      z
-    ```
-  * For convenience, we'll consider a "scope" as what siblings and their decendents can access. For Elder syntax, these are often just names and paths to those names.
-* When used as a node in a tree what is returned by the subtree.
-  * For example, the middle element is a sequence which is both a subtree and subexpression. It is the sequence `(b, c)`:
-    ```
-    (a, (b, c == 1, 2), d)
-    ```
-    this expands to:
-    ```
-    a, b = 1, c = 2, d
-    ```
-
-These are the common patterns along with the effects they will produce:
-* Multiline Literal
-  ```
-  x = 0
-    .a = 1
-    .b = 2
-    .c
-    :d = 3
-  y
-  z
-    .e = 4
-  ```
-  * Useful to model complex data as the structure is most explicit and verbose.
-  * This can only be composed within other multiline literal patterns as it's the only pattern which uses multiple lines.
-  * Effects
-    * The sequence of names `(x, y ,z)` will added to scope.
-    * When used in a subexpression `(x, y, z)` will be returned by the expression.
-* Inline Literal
-  ```
-  x .a = 1, .b = 2, .c, :d = 3
-  ```
-  * Useful to model moderately complex data which is often structured line-by-line like HTML, CSS, etc.
-  * It's possible to have multiple literals but the syntax becomes harder to understand.
-  * Effects
-    * The name `x` will be added to scope.
-    * When used in a subexpression `x` will be returned by the expression.
-* Chain
-  ```
-  x.(a = 1, b = 2, c):(d = 3) = 0
-  ```
-  * Useful to model nested structure as this more easily composes within other expressions.
-  * Often used to mimic syntax like `x:Int = 4` which we approximate w/ our current syntax as `x:(type = Int) = 4`
-  * Effects
-    * The name `x` will be added to scope.
-    * When used in a subexpression `x` will be returned by the expression.
-* Selection
-  ```
-  x.(a, b, c):(d), z.e
-  ```
-  * Useful to traverse (or define) the structure to a name.
-  * Selection multiple names results in a sequence of names. The above example expression becomes `(x.a, x.b, x.c, x:d, z.e)`
-    * Since selection only returned the deepest names of a structure. If you want to pass higher level names (like `x` in the above example) they need to be listed as well. For example `x, x.(a, b, c):(d), z.e` would expand to `(x, x.a, x.b, x.c, x:d, z.e)`.
-  * Effects
-    * This pattern is a bit different. Remember only top-level names will added to scope. For this example, only the sequence of names `(x, z)` are top level while the rest describe structure internal to those names.
-    * When used in a subexpression `(x.a, x.b, x.c, x:d, z.e)` is returned by the expression.
-* Destructure
-  ```
-  x.(a, b):(d), z.e == 0, 1, 2, 3
-  ```
-  * Destructure is a combination of L-hand selection and R-hand value. The pattern is names of the L-hand and values on the R-hand.
-  * Useful to model multiple return values, build data in a specific structure, define multiple names within scope.
-  * Effects
-    * This pattern is a bit different like selection above. For the same reason, only the sequence of names `(x, z)` are top level while the rest describe structure internal to those names.
-    * When used in a subexpression `(x, x.a, x.b, x.c, x:d, z.e)` is returned by the expression.
-* Sequence of Expressions
-  ```
-  x = 0, y, z.a = 2
-  ```
-  * Useful to model internals of a relator. Generally not preferred as a way to introduce names into a scope as can be confusing compared to multiline literal or destructure.
-  * Since `,` is lower precedence than `=` this is a series of 3 expressions.
-  * Effects
-    * The sequence of names `(x, y, z)` will be added to scope.
-    * When used in a subexpression `(x, y, z.a)` is returned by the expression.
-
-Although each of these are generally equivalent to one another, some patterns have different effects. The next sections discuss what they are and the reasoning behind their design decisions.
-
-### Orthogonal Syntax
-
-Syntax patterns generally fall into 2 categories of focus:
-* Describing internal structure of a name (multiline literal, inline literal, chain)
-* Describing multiple names regardless if they belong to a common parent (selection, destructure, sequence of expression)
-
-Each of these categories are designed so that it's easier to compose data without worrying about the internal structure of a name. To keep them mostly orthogonal, we introduce a rule which we'll explore with examples below. The rule is: if a syntax is defining the internal structure of name, only the name itself will be be returned by the expression.
-
-Here's a simple example:
-```
-x.(a = 1) = 0
-```
-If the L-hand expression `x.(a = 0)` returned `x.a` this would result in `a` being overwritten on the R-hand value. This is rarely, if ever, what is desired. Often we want to ignore the internal structure of `x`.
-
-Instead this expands to:
-```
-x = 0
-  .a = 1
-```
-
-If we instead wanted to model this using destructuring:
-```
-(x, x.a) = 0, 1
-```
-
-Although the intent may be clear w/ a simple syntax, it becomes harder to track as the syntax becomes more complex:
-```
-x, y.(a, b:(t = 1), c == 1, 2, 3), z == 4, 5, 6
-```
-
-Although not recommended, this syntax is valid. Since we don't allow for inner structure to be passed (unless we do so manually using selection) we can read this as 2 expressions:
-* Ignore the internal structure of `b`
-  ```
-  a, b:(...), c == 1, 2, 3
-  ```
-* Ignore the internal structure of `y`
-  ```
-  x, y.(...), z == 4, 5, 6
-  ```
-Althought not perfect, ignoring the internal structure makes it easier to read which names are mapped to which values.
-
-If we instead wanted to model using destructuring it is more manual:
-```
-x, y, y.a, y.b, y.b:t, y.c, z == 4, 5, 1, 2, 1, 3, 6
-```
-
-or equivelently a bit more tersely (and a bit more structure preserving):
-```
-x, y, y.(a, b, b:t, c), z = 4, 5, 1, 2, 1, 3, 6
-```
-
-For clarity, here is the same example but as a multiline literal (which should preferred for complex syntax):
-```
-x = 4
-y = 5
-  .a = 1
-  .b = 2
-    :t = 1
-  .c = 3
-z = 6
-```
-
-### Headless selection
-
-When selection syntax is used, notice that only the names at the edge are passed. Consider the example:
-```
-x.(a, b:(t, u, v), c)
-```
-
-this will expand to:
-```
-(x.a, x.b:t, x.b:u, x.b:v, x.c)
-```
-
-The structure describes that path to each name instead of being passed themselves.
-
-You can pass the names which are used for structure they have to be passed as well. Let's edit this example to pass `x` as well:
-```
-(x, x.(a, b:(t, u, v), c))
-```
-
-this will expand to:
-```
-(x, x.a, x.b:t, x.b:u, x.b:v, x.c)
-```
-
-To make this example ignore the internal structure simply make any name within the structure assign it a value:
-```
-x.(a, b:(t, u = 1, v), c)
-```
-
-this will make the result of the expression as `x` instead of each name.
-
-### Top level names in scope
-
-The names which are added to the current scope can be different than what is returned by an expression. The rule for this is rather simple: only the top-level names will be brought to scope.
-
-Here's a few examples with the names brought into scope:
-* Multiline Literal
-  ```
-  x
-    .a = 1
-    .b = 1
-  y
-    :c = 2
-  z
-  ```
-  `(x, y, z)` are brought into scope. Their internal structure is internally scoped. For example `a` and `b` share the same scope of `x.`.
-* Inline Literal
-  ```
-  x .a, .b = 1, :c
-  ```
-  `x` is brought into scope. `a, b` share scope under `x.` and `c` under `x:`.
-* Chain
-  ```
-  x.(a, b = 1):(c)
-  ```
-  Scope rules are just like the previous example.
-* Selection
-  ```
-  x.(a, b:(t, u), c)
-  ```
-  `x` is brought into scope. `a, b, c` share scope under `x.` and `t, u` under `x.b:`
-* Destructure
-  ```
-  x.a, x.b, y.c.d, z == 1, 2, 3, 4
-  ```
-  Since only the top-level names are brought into scope; `x, y, z` are brought into scope.
-
-  To better visualize the structure view it as a multiline literal:
-  ```
-  x
-    .a = 1
-    .b = 2
-  y
-    .c
-      .d = 3
-  z = 4
-  ```
-  It's clear which scopes are shared viewing it this way.
-* Series of Expressions
-  ```
-  x, y = 1, z.a.b = 2
-  ```
-
-  This is read as a series of expressions. Rewriting it makes it even more clear:
-  ```
-  x
-  y = 1
-  z.a.b = 2
-  ```
-  It's clear now that `x, y, z` are brought into scope.
-
-
-## Composing (In Progress)
-------------------------------------------------------------------------------------------------------------
-
-* VIA
-  * Parent-child
-  * Siblings
-  * Subexp
-
-## Composing Destructure
-------------------------------------------------------------------------------------------------------------
-
-This composes as well like you'd expect. Consider a slightly more complex example with nested destructuring:
+Consider a slightly more complex example with nested destructuring:
 ```
 a, (b, c == 1, 2) == (x, y == 3, 4), z
 ```
@@ -876,6 +495,219 @@ finally evaluates to:
 ```
 (a, b = 1, c = 2) = (x = 3, y = 4, z)
 ```
+
+## 6 Common Patterns
+------------------------------------------------------------------------------------------------------------
+
+At this point we've introduced all the basic syntax needed to describe the most common syntactical patterns that arise. These aren't exhaustive but they cover most of the common use-cases.
+
+### Multiline Literal
+
+Useful to model complex data as the structure is most explicit and verbose. 
+
+Multiline literals can only be within other multiline literals as it's the only pattern which uses multiple lines.
+
+```
+x = 0
+  .a = 1
+  .b = 2
+  .c
+  :d = 3
+y
+z
+  .e = 4
+```
+
+The example reads as:
+* `x, y, z` are siblings
+* `x` has a property relator `.` with children `a, b, c`
+* `x` has a metadata relator `:` with child `d`
+* `z` has a property relator `.` with child `e`
+
+### Inline Literal
+
+Useful to model moderately complex data which is tree-like elements like HTML, CSS, etc.
+
+Technically it's possible to have multiple inline elements on the same line but it comes much harder to understand and thus not recommended.
+
+```
+x .a = 1, .b = 2, .c, :d = 3
+  y .a, .b, :c = 1
+```
+
+The example reads as:
+* `x` has a property relator `.` with children `a, b, c`
+* `x` has a metadata relator `:` with child `d`
+* `y` is the child of `x`
+* `y` has a property relator `.` with children `a, b`
+* `y` has a metadata relator `:` with child `c`
+
+
+### Chain
+
+Useful to model nested structure as this more easily composes within other expressions.
+
+For example, can used to mimic syntax like `x:Int = 4` which we approximate w/ our current syntax as `x:(type = Int) = 4`
+
+```
+x.(a = 1, b = 2, c):(d = 3) = 0
+```
+
+The example reads as:
+* `x` has a property relator `.` with children `a, b, c`
+* `x` has a metadata relator `:` with child `d`
+* `x` is bound to value `0`
+
+### Selection
+
+Useful to traverse and select multiple names which are then often used in other patterns.
+
+```
+x.(a, b, c):(d), z.e
+```
+
+The example reads as:
+* under `x` name and then property relator `.` select names `a, b, c`
+* under `x` name and then metadata relator `:` select name `d`
+* under `z` name and then property relator `.` select name `e`
+
+This selection is translated to `(x.a, x.b, x.c, x:d, z.e)`.
+
+Selection only returned the deepest names of a structure. If you want to pass higher level names (like `x` in the above example) they need to be listed as well. For example `x, x.(a, b, c):(d), z.e` would translate to `(x, x.a, x.b, x.c, x:d, z.e)`.
+
+### Destructure
+
+Destructure is a combination of selection on the L-hand and R-hand values. The L-hand is interpreted as a sequence of names and the R-hand as a sequence of values.
+
+Useful to model multiple return values, build data in a specific structure, define multiple names at once, handle multiple return values, etc.
+
+```
+x.(a, b):(d), z.e == 0, 1, 2, 3
+```
+
+The example reads as:
+* under `x` name and then property relator `.` select names `a, b, c`
+* under `x` name and then metadata relator `:` select name `d`
+* under `z` name and then property relator `.` select name `e`
+* in order of selected, assign sequence of values `0, 1, 2, 3`
+
+### Sequence of Expressions
+
+Useful to model internals of an expression, relator, etc. as it describes multiple names and their values.
+
+Consider this example which is valid but overly confusing when ther are clearer patterns:
+```
+x = 0, y, z.a = 2
+```
+
+The example reads as:
+* `x, y, z` are siblings
+* `x` is bound to value `0`
+* `z` has a property relator `.` with child `a`. `a` is bound to value `2`.
+
+This is equivalent to the much more clear:
+```
+x = 0
+y
+z.a = 2
+```
+
+The inline form is more clear when describing the internal structure of a name. Consider if the above example is a child of relator like:
+```
+o.(x = 0, y, z.a = 2)
+```
+
+This is more clear as the series of expressions describe the properties of `o` and syntactically looks like the attributes of `o`.
+
+### Orthogonal Syntax
+
+Syntax patterns generally fall into 2 categories of purpose:
+* Describing internal structure of a name (multiline literal, inline literal, chain)
+* Describing multiple names regardless if they belong to a common parent (selection, destructure, sequence of expressions)
+
+Each of these categories are designed so that it's easier to compose data without worrying about the internal structure of a name. To keep them mostly orthogonal, we introduce a rule which we'll explore with examples below. The rule is: if a syntax is defining the internal structure of name, only the name itself will be exposed to the outside.
+
+Here's a simple example:
+```
+x.(a = 1) = 0
+```
+If the L-hand expression `x.(a = 0)` returned `x.a` this would result in `x.a = 1` then `x.a = 0`. `x.a` being overwritten on the R-hand value is rarely, if ever, what is desired. Often we want to ignore the internal structure of `x`.
+
+Instead this expands to:
+```
+x = 0
+  .a = 1
+```
+
+
+Although the previous example may be simple to reason about, it becomes harder to visually track as the syntax becomes more complex:
+```
+x, y.(a, b:(t = 1), c == 1, 2, 3), z == 4, 5, 6
+```
+
+Although not recommended, this syntax is valid. Due to our rule above, we can simplify this somewhat and read it as 2 expressions:
+* Ignore the internal structure of `b`
+  ```
+  a, b:(...), c == 1, 2, 3
+  ```
+* Ignore the internal structure of `y`
+  ```
+  x, y.(...), z == 4, 5, 6
+  ```
+Althought not perfect, ignoring the internal structure makes it easier to read which names are mapped to which values.
+
+If we instead wanted to model using destructuring it is a bit more verbose but at least it's using a flat list which may be preferable in some cases:
+```
+x, y, y.a, y.b, y.b:t, y.c, z == 4, 5, 1, 2, 1, 3, 6
+```
+
+or equivalently (which keeps more of the structure):
+```
+x, y, y.(a, b, b:t, c), z = 4, 5, 1, 2, 1, 3, 6
+```
+
+For clarity, here is the same example but as a multiline literal (which should preferred for complex syntax):
+```
+x = 4
+y = 5
+  .a = 1
+  .b = 2
+    :t = 1
+  .c = 3
+z = 6
+```
+
+### Headless Selection
+
+When selection syntax is used, notice that only the names at the edge are passed. Consider the example:
+```
+x.(a, b:(t, u, v), c)
+```
+
+this will expand to:
+```
+(x.a, x.b:t, x.b:u, x.b:v, x.c)
+```
+
+This should be read as a sequence of names `(a, t, u, v, c)` and the paths required to get to them.
+
+You can pass the names which are used for structure they have to be passed as well. Let's edit this example to pass `x` as well:
+```
+(x, x.(a, b:(t, u, v), c))
+```
+
+this will expand to:
+```
+(x, x.a, x.b:t, x.b:u, x.b:v, x.c)
+```
+
+To change this example to focus on data definition instead of data selection; simply assign any name within the structure a value:
+```
+x.(a, b:(t, u = 1, v), c)
+```
+
+This changes the pattern from **selection** to **chain** b/c we're defining internal structure which hides all the interals of `x` until after this expression.
+
 
 ## Comments
 ------------------------------------------------------------------------------------------------------------
@@ -923,542 +755,16 @@ The only escape character is `\`. It can be used in multiple ways:
   ```
   my\ complex\ name = 1
   ```
-* Escapes symbol
+* Using parentheses will interpolate
   ```
   name = Jane
 
   "Hello \(name)!"
   ```
-* Escapes expression
+  really any expression:
   ```
   x = 1
   y = 2
 
   "x + y is \(x + y)"
   ```
-
-## Identifier (in progress)
-------------------------------------------------------------------------------------------------------------
-
-In order to model concepts like operators, prefix/suffix fixity, relators, literals, etc. it's important that:
-* it's very clear what are allowed identifiers for each type
-* concepts which combine into single words use orthogonal characters
-* deliniation?
-* 
-
-* cases
-  * relator
-  * relator name
-  * identifier
-  * reserved
-  * canonical
-  * upper case
-* 
-
-
-
-
-## Reserved (in progress)
-------------------------------------------------------------------------------------------------------------
-
-We reserve some identifiers for future use. TODO...
-
-* comptime `#`
-  * `#do`
-* `do`
-* 
-
-
-## Codegen (in progress)
-------------------------------------------------------------------------------------------------------------
-
-### Comptime
-### Codegen emit where in subexp
-### Deterministic Patterns
-
-## Sugar (in progress)
-------------------------------------------------------------------------------------------------------------
-
-### Operators act-like expanded tree node
-Now that we know how relators are modeled; we can now describe an additional syntactical tool. Most operators can become a tree node when in the expanded syntax form.
-
-Since we've already discussed it; let's use `=` which is usually a binary, infix operator.
-
-Equals can also act-like a relator in it's expanded form. It works the same as a `= \n` as discussed above and does what you'd expect.
-```
-x
-  =
-    a
-    b
-    c
-  .
-    x
-    y
-    z
-```
-
-is equivalent to:
-```
-x = (a, b, c)
-  .
-    x
-    y
-    z
-```
-
-This works for most syntactical operators since they all support a tree structure.
-
-### Defaulting (or space relator?)
-
-because, by default (explained in more depth at `Defaulting`), a `INDENT` signifies a parent-child relation, this is equivalent to:
-```
-x
-  a
-  b
-  c
-```
-
-### Anonymous Item
-There are cases where we want to represent a series of elements without a meaningful name.
-
-There are a few notes:
-* The only valid identifiers are `-` and `*`
-* Each sibling (items on the same indentation level) must consistently use the same syntax
-* The identifier for a sibling must only be at the start of a line in a multiline form
-* The identifier acts like a tag which means it can be added just to make items more clear
-
-Consider the psuedo code:
-```
-my-elems = [
-  { a, b, c = 3 },
-  { t, u, v = 6 },
-  { x, y, x = 9 }
-]
-```
-
-Using our current syntax we'd have  ...
-
-With our current syntax there isn't a way to represent this without weird syntax and visual noise. To avoid issues like this we'll introduce new syntax using `-` and `*` which:
-* work like most markup languages use them as list-item identifiers at the start of a line. If they're used immediately after the leading whitespace then it doesn't indicate an item.
-* only mean 
-
-Rules:
-* must use consistently for siblings
-  * can't mix identifier or add identifier or not
-* 
-
-## Literals
-------------------------------------------------------------------------------------------------------------
-
-[//]: # ( These are optional; when not present the values are interpretable as that type regardless. They are a means of adding constraints (like a Schema) )
-
-* Containers
-  * Sequence `()`
-  * List `[]`
-  * Map `{}`
-    * names w/o values are interpreted as just keys? w/ what value? Depends on type and DSL?
-  * String
-    * inline `""`
-    * block `"""`
-  * Code
-    * inline `` ` ``
-    * block ```` ``` ````
-* Primitives
-  * Integral
-  * Floating Point
-  * Fixed Point
-  * Constants
-    * PI
-    * 
-  * 
-* 
-
-## Types
-------------------------------------------------------------------------------------------------------------
-
-Types are useful when modeling data as it constraints the possible values the variable may contain.
-
-When creating a type, there are a few rules:
-* Must start w/ an upper-case alpha character (really necessary? can't we derive if it starts w/ a numeric?)
-* 
-
-### Sugar
-How to model `x:Int = 4` which expands to `x:(type = Int) = 4`?
-
-## Schema
-------------------------------------------------------------------------------------------------------------
-
-TODO
-* Look at other solutions: StrictYAML, OGDL, InternetObject, GraphQL, other schema definition systems?
-* 
-
-## Precedence
-------------------------------------------------------------------------------------------------------------
-
-### Global Precedence
-### Relative Precedence
-
-## Issues
-------------------------------------------------------------------------------------------------------------
-
-* Mixing destructuring (`==`) w/ cases which wouldn't normally destructure (but should chain or something else).
-  * There may be other interactions as well.
-  * Consider:
-    ```
-    o.(a, b, c) =  1, 2, 3
-    o.(a, b, c) == 1, 2, 3
-
-    o.(a, b = 1, c) =  1, 2, 3
-    o.(a, b = 1, c) == 1, 2, 3
-
-    o.(a = 1, b = 2, c = 3) =  4, 5, 6
-    o.(a = 1, b = 2, c = 3) == 4, 5, 6
-
-    o.(a, b), t.(x, y) =  1, 2, 3, 4
-    o.(a, b), t.(x, y) == 1, 2, 3, 4
-
-    o.(a = 1, b), t.(x = 3, y) =  2, 4
-    o.(a = 1, b), t.(x = 3, y) == 2, 4
-
-    o.(a = 1, b = 2), t.(x = 3, y = 4) =  5, 6
-    o.(a = 1, b = 2), t.(x = 3, y = 4) == 5, 6
-    ```
-  * since `x == y` is actually `(x) = (y)` doesn't that mean there shouldn't be any partial forms?
-* Should destructuring require all names be matched to values of R-hand?
-  * Cases:
-    * L-hand == R-hand
-    * L-hand <  R-hand
-    * L-hand >  R-hand
-    * L-hand or R-hand arity 0
-    * L-hand or R-hand arity undetermined (eg stream, infinite sequence, ...)
-  * eg `x:(a, b, c) = 0` should this be allowed? what would be the effect?
-* How does one define structural names but also assign the parent a value?
-  * That is case where children have name w/o value but want the parent to have a value
-  * eg `x:(a, b, c) = 0` is interpreted as a destructure and `a` is assigned `0`. What if we wanted the result to be like `(x = 0):(a, b, c)`?
-    * Is it worth it as structural names are less common than destructuring is?
-* Too many ways to describe data each w/ their own quirks and nuances. Is there a more optimal, consistent, predicable solution?
-  * Main factors: form, emit names, composition method, count (1, seq, ..), , correspondance/equivalence, ???
-  * When to use each? what are the use-cases?
-  * Forms
-    * Multiline literal
-      ```
-      o = 0
-        .a = 1
-      ```
-      * Emit `o` name
-    * Multiple Statements
-      ```
-      o   = 0
-      o.a = 1
-      ```
-      * Emit
-        * 1st emit `o` name
-        * 2nd statement emit `o.a` name
-    * Literal
-      ```
-      o .a = 1 == 0
-      ```
-      * Emit `o` name
-    * Chain
-      ```
-      o.(a = 1) = 0
-      ```
-      * Emit `o` name
-    * Inline Exp
-      ```
-      (o = 0).(a = 1)
-      ```
-      * Emit `o` name
-    * Destructure
-      ```
-      o, o.a  == 0, 1   // Using == operator
-      (o, o.a) = 0, 1   // Using L-hand ()
-      (o, o.a) = (0, 1) // Using both ()
-      ```
-      * Emit `o`, `o.a` sequence of names
-    * Inline Exp Relator Literal
-      ```
-      (o = 0).a = 1
-      ```
-      * Emit `o` name?
-  * Compositions of Forms
-    * Methods
-      * by sequence-element
-      * by parent-relator
-      * by exp-subexp?
-  * Correspondance/Equivalence
-    ```
-    o = (1, 2, 3)
-      .
-        a
-        b = 4
-        c
-      :
-        d = 5
-        e
-
-    o = (1, 2, 3)
-      .a
-      .b = 4
-      .c
-      :d = 5
-      :e
-
-    o = (1, 2, 3)
-      .(a, b = 4, c)
-      :(d = 5, e)
-
-    o = (1, 2, 3)
-      .(a, b, c) = _, 4, _
-      :(d, e)    = 5, _
-
-    o = (1, 2, 3)
-      .a, .b = 4, .c
-      :d = 5, :e
-
-    (o = (1, 2, 3)) .a, .b = 4, .c, :d = 5, :e
-
-    (o = (1, 2, 3)).(a, b = 4, c):(d = 5, e)
-
-    o .a, .b = 4, .c, :d = 5, :e  == (1, 2, 3)
-    o .(a, b = 4, c), :(d = 5, e) == (1, 2, 3)
-
-    o.(a, b = 4, c):(d = 5, e) = (1, 2, 3)
-
-    o, o.a, o.b, o.c, o:d, o:e = (1, 2, 3), _, 4, _, 5, _
-    o, o.(a, b, c), o:(d, e)   = (1, 2, 3), _, 4, _, 5, _
-    ```
-    * All not equivalent in all aspects b/c:
-      * which names are emitted change based on which form
-      * Not all forms are composable
-        * Multiple lines/statements aren't w/n a inline form
-  * Questions
-    * Is the common pattern what names an expression will emit?
-      * Different forms but same form:
-        ```
-        o .a, .b = 1, .c =  0
-        o .a, .b = 1, .c == 0
-
-        o .a, .b = 1, .c = 2 == 0
-
-        o .(a, b = 1, c) =  0
-        o .(a, b = 1, c) == 0
-
-        o, o.a, o.b, o.c == 0, _, 1, _
-        o, o.(a, b, c)   == 0, _, 1, _
-
-        (o = 0).(a, b = 1, c)
-        (o = 0) .(a, b = 1, c)
-        (o = 0).(a, b, c == _, 1, _)
-        (o = 0) .a, .b = 1, .c
-
-        o = 0
-          .(a, b = 1, c)
-
-        o = 0
-          .(a, b, c) = _, 1, _
-
-        o = 0
-          .a
-          .b = 1
-          .c
-        ```
-        * Think of expand rules?
-* Use equal precedence for grouping?
-  * eg `a + b == c / d == e * f` equivalent to `(a + b) = (c / d) = (e * f)` b/c `==` repeats and groups?
-    * May not work b/c there can be multiple repeating operator-like thing `==`, `||`, ...
-  * This may need to be paired w/ precedence, grouping, and associativity
-* Not associative types to assure there's only 1 per expression
-  * This forces developer to specify using `()`
-  * eg `x = 0 = 1` isn't valid b/c `=` doesn't associate except `(x = 0) = 1` is valid b/c associativity is clear
-  * and/or have a default associativity like a function? where associate to R and till EOL?
-* If destructure vs not is determined by assigment on L-hand of `=` which level of `=` expression is poisoned?
-  * Just the parent? The entire L-hand to the top-level expression?
-  * consider:
-    ```
-    o.(x, y, z) = 1, 2, 3
-
-    o.(x = 1, y = 2, z = 3)
-    ```
-    
-    then, when composed:
-    ```
-    t.( o.(x, y, z) = 1, 2, 3 ) = 0
-
-    ( o.(x, y, z) = 1, 2, 3 ), t.(a, b, c) = ...
-
-    
-    ```
-* Edge cases
-  * Inner destructure without parent?
-    ```
-    a, (b, c == 1, 2) == (x, y == 3, 4), z
-    ```
-  * Assignment on L-hand and destructure b/c no parent?
-    ```
-    (x, y = 1, z) = 0, 2
-    ```
-* Emit names into scope
-  * There's only 2 cases for what to emit:
-    * Unambiguous describe a single name
-      * Forms
-        * Literal
-          * x .a             // emit x
-          * x .a, .b         // emit x
-          * x .(a, b)        // emit x
-          * x .a = 1, .b = 2 // emit x
-        * Multiline
-          * x = 0            // emit x
-              .a = 1
-              .b
-              .c = 2
-        * Chain
-          * x.(a = 1)         // emit x
-          * x.(a = 1).(b = 2) // emit x
-          * x.(a = 1, b)      // emit x
-    * Describe one to many names
-      * Cases: 0, 1, finite, unbounded
-      * Forms
-        * Sequence of Expressions
-          * x = 0                           // emit x
-          * x.a = 1                         // emit x.a
-          * x, y = 0, z                     // emit (x, y ,z)
-          * a, b = 0, c, d.(x, y) = 1, 2, e // emit (a, b, c, d.x, d.y, e)
-        * Destructure
-          * (x, y) = 1, 2                 // emit (x, y)
-          * x.(a, b) = 1, 2               // emit (x.a, x.b)
-          * (x, y.(a, b), z) = 0, 1, 2, 3 // emit (x, y.a, y.b, z)
-  * Mix
-    * (x, y.(a = 1, b), z) = 1, 2, 3 // 
-      (x, y, z)            = 1, 2, 3 // After emit y
-    * a, (b, c == 1, 2) == (x, y == 3, 4), z // 
-      a, b, c           == x, y, z           // After inner eval will emit (b, c), (x, y)
-      (a, b, c)         =  x, y, z           // After eval ==
-* Compose methods
-  * With current syntax can only compose in a few ways
-    * Sequence - Sequence Element
-      * chain
-        ```
-        (x, y.(a = 1):(b = 2), z) = 1, 2, 3
-        (x, y, z) = 1, 2, 3
-        ```
-      * series of expressions
-        ```
-        (a, b, (x, y = 0, z), c) = 1, 2, 3, 4, 5, 6
-        (a, b, (x, y, z), c)     = 1, 2, 3, 4, 5, 6
-        (a, b, x, y, z, c)       = 1, 2, 3, 4, 5, 6
-        ```
-      * destructure
-        ```
-        (a, b, (x, y, z == 1, 2, 3), c) = 1, 2, 3, 4, 5, 6
-        (a, b, (x, y, z), c)            = 1, 2, 3, 4, 5, 6
-        (a, b, x, y, z, c)              = 1, 2, 3, 4, 5, 6
-        ```
-      * get
-        ```
-        (a, b, (x, y, z), c) = 1, 2, 3, 4, 5, 6
-        (a, b, x, y, z, c)   = 1, 2, 3, 4, 5, 6
-        ```
-      * literal
-        ```
-        (a, b, (x .(t, u) :v), c) = 1, 2, 3, 4
-        (a, b, (x), c)            = 1, 2, 3, 4
-        (a, b, x, c)              = 1, 2, 3, 4
-        ```
-      * multiline
-        ```
-        a
-        b
-        x
-          .t
-          .u
-          :v
-        c
-        ```
-      * eg
-      ```
-      x, y = 1, z
-      (x, y = 1, z) = 1, 2, 3
-      (x, y.a = 1, z) = 1, 2, 3
-      (x, y.(a = 1), z) = 1, 2, 3
-      (x, (y .a = 1), z) = 1, 2, 3
-      (x, y.(a, b), z) = 1, 2, 3, 4
-      ```
-      
-    * Parent - Relator Element
-      * eg
-      ```
-      x.(y.(a = 1)) = 0
-      ```
-
-    * Expression - Subexpression
-
-* Is the real issue dealing w/ parent-child relationship vs sibling?
-  * All that emit the parent name is parent-child while get/destructure are sibling?
-  * eg consider:
-    ```
-    x.(y.(a = 1)) = 0     // results in x = 0
-    
-    vs
-
-    x.(y .a = 1) = 0      // results x = 0
-    
-    vs
-
-    x.(y.a = 1) = 0       // results in x = 0
-
-    vs
-
-    x.(a, b, c) = 0       // resutls in x.a = 0 or error?
-
-    vs
-
-    x.(a, b = 1, c) = 0   // results in x = 0
-
-    vs
-
-    x.(y, z == 1, 2) = 0  // results x = 0
-    ```
-* `(a, (b, c, d), e)` is?
-  ```
-  - a
-  - b
-    c
-    d
-  - e
-  ```
-  or
-  ```
-  a
-  b
-  c
-  d
-  e
-  ```
-  * Need different syntax when expression vs subsequence? Need to differentiate container vs contents?
-    * eg can emit literal using syntax like `=(b, c, d` which forces `(a, =(b, c, d), e)` to be `(a, b, c, d, e)`
-  * Different contexts mean different results
-    * replaced with result
-      * functions
-      * operator
-      * expression
-    * returns sequence
-      * literal
-      * selection
-        * x.(a, b):(c, d)
-      * destructure
-        * (a, b == 1, 2)
-      * relator selection
-        * examples
-          * a vs (a)?
-          * x.a vs x.(a)?
-          * a, b, c vs (a, b, c) vs x.(a, b, c)
-          * ((a, b, c), (d, e, f)) vs (a, b, c, d, e, f)
-* How is `3 + 4` in Elder syntax?
-  * Not clearly a sequence?
-  * A sugar for infix operator? desugars to `+(3, 4)`?
-* Be clear `x.(a, b, c)` is names `(x.a, x.b, x.c)` not `(a, b, c)`
-* Invalid syntaxes
-  * x, y, z, y == 0, 1, 2, 3
-    * Cannot repeat same name in selection?
-  * Redef structure?

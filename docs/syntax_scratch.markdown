@@ -1262,3 +1262,603 @@ Block to Parentheses
 * examples
 * edge-cases
   * conditional `if (x > 0 and y < 10) then [log x; x] else [log y; y]`
+
+### Blocks in fns
+
+* Issues
+  * Blocks can be a series of instructions as well as a list; how to know which?
+    * eg if we're using block for setup then we need to return the condition at the end?
+
+* conditional 
+
+if (x > 0, y < 0)    then (log x; x) else (log y; y)
+if (x > 0 and y < 0) then (log x; x) else (log y; y)
+if (x > 0 and y < 0) then [log x; x] else [log y; y]
+if [x > 0 and y < 0] then [log x; x] else [log y; y]
+
+if
+  x > 0
+  y < 0
+then
+  log x
+  x
+else
+  log y
+  y
+
+if (x > 0 and y < 0)
+  log x
+  x
+else
+  log y
+  y
+
+* for
+
+for
+  [
+    i:Int = 0
+    j:Int = 0
+  [
+    i < 10
+    j < 100
+  [
+    i += 1
+    j += 1
+  [
+    log i, j
+
+for
+  - i:Int = 0
+    j:Int = 0
+  - i < 10
+    j < 100
+  - i += 1
+    j += 1
+  - log i, j
+
+for [ i:Int = 0, j:Int = 0 ], [ i < 10, j < 100 ], [ i += 1, j += 1 ]
+  log i, j
+
+for i:Int = 0, j:Int = 0; i < 10, j < 100; i += 1, j += 1
+  log i, j
+
+* while
+
+
+### Parentheses reduction
+* Before or after substution
+* Parentheses used as:
+  * data definition
+  * data structure which will be processed
+    * the structures is significant (like a ordered set)
+  * handle/merge results
+    * eg ( f(x), g(y) ) => ( a, b, c, d )
+      * f => (a, b), g => (c, d)
+* Notice that subsitution gets us the most general solution and then more characters to reduce it?
+  * or more characters to preserve it? what makes the most sense for a default?
+
+```
+a = o.(x = 1)
+b = a
+```
+
+```
+a = f(x)
+b = g(y)
+c = h(a, b)
+
+c = h( f(x), g(y) )
+c = h( f', g' )
+c = h'
+```
+
+```
+a = (1 + 2)
+b = (3 + 4)
+c = (a, b)
+d = (a + b)
+
+c = ( (1 + 2), (3 + 4) )
+c = (3, 7)
+
+d = ( (1 + 2) + (3 + 4) )
+d = ( 3 + 7 )
+d = ( 10 )
+d = 10
+```
+
+```
+a = (1, 2, 3)
+b = (4, 5, 6)
+c = (a, b)
+
+c = (1, 2, 3, 4, 5, 6)
+c = ( (1, 2, 3), (4, 5, 6) )
+```
+
+```
+a = ((Billy Bob), 16, 0)
+b = ((Jilly Jane), 23, 1)
+c = (a, b)
+
+c = ((Billy Bob), 16, 0, (Jilly Jane), 23, 1)
+c = ( ((Billy Bob), 16, 0), ((Jilly Jane), 23, 1) )
+```
+
+() and [] differ by:
+* their semantic meaning
+* () has no data representation; more a syntactical tool
+* () can often be reduced based on multiple conditions
+* 
+
+## Parentheses
+------------------------------------------------------------------------------------------------------------
+
+
+Parentheses perform multiple duties depending on how they're used:
+* Like in most languages they're the highest precedence:
+  * expression  `(1 + 2) * 3`
+  * infix operator `x = (1, 2, 3)`
+* Is the start `(` and stop `)` of an operator, relator, function, etc.:
+  * expression `(1 + 2)`
+  * operator act-like function `+(1, 2)`
+  * function input call `f(1, 2)`
+  * relator data definition `o.(a, b = 1, c)` or `o .(a, b = 1, c)`
+  * relator selection `o.(a, b, c)`
+* As blocks:
+  * in functions to group steps like `if (x > 0 and y < 10) then (log x; x) else (log y; y)`
+  * even to model grouping of data like `((Billy Bob), 16), ((Jill Jane), 26)` to represent a custom grouping of 2 people with their names and age
+    * or should this be: `[(Billy Bob), 16], [(Jill Jane), 26]`
+
+The underlying pattern of parentheses is that they:
+* group their contents together
+* depending on how they used, the effect varies (eg `o.(a = 1)` means something different than `(1 + 2)` but the pattern is the same of grouping their contents together)
+
+
+
+### Parentheses are not Data
+
+Since parentheses are more like hints, they're generally not inspectable as they're automatically reduced and result in a unwrapped sequence. When composed, this has an effect that's novel.
+
+Consider the following psuedo code:
+```
+x = (1, 2, 3)
+y = (4, 5, 6)
+z = (x, y)
+```
+
+TODO:
+* Are they reduced now so the results is `z = (x, y) = (1, 2, 3, 4, 5, 6)`?
+  * This reduces the composibility though right? b/c what if inner elements look like: `x = ((Billy Bob), 16)` then when composed will be flat elements?
+
+The value of `z` won't be 2 sequences like one may expect. Let's go through it step by step.
+
+The process which starts by substitution in place:
+```
+z = ((1, 2, 3), (4, 5, 6))
+```
+
+Since there is nothing left to do w/n the inner expression, the parentheses are reduced:
+```
+z = (1, 2, 3, 4, 5, 6)
+```
+Notice that although we started with several sequences, we end up w/ a flat sequence.
+
+This may seem weird but it's a natural extension to do what we do in other languages. It's common in other languages to:
+* return a single item like `4`, `8.7`, `'c'`, `"Hello"`
+* return 0 to many items w/n some type of container like `[1, 2, 3]`, `{x, y, z}`
+
+What parentheses allow us to do is add another category which act like multiple items w/o a container. This allows us to avoid extra wrapping and unwrapping of data which leads to more visual noise.
+
+For example, consider this psuedo code where we use an external function to construct the properties of a HTML-like element:
+```
+f = Fn () -> Seq
+  (width = 100%, height = 20px)
+
+header .(f(), background-color = FFF)
+footer .(f(), background-color = 000)
+```
+
+This results in what you'd hope w/o having to unwrap the function result:
+```
+header .(width = 100%, height = 20px, background-color = FFF)
+footer .(width = 100%, height = 20px, background-color = 000)
+```
+
+## Blocks
+------------------------------------------------------------------------------------------------------------
+
+Much like parentheses, blocks (notated with brackets `[]`) wrap a sequence. However since a block is a container they are not reduced automatically.
+
+This makes blocks appropriate to model:
+* List which is just an isolated sequence
+  * inline
+    ```
+    x = [1, 2, 3]
+    ```
+  * nested inline
+    ```
+    x = [1, [2, 3, 4], 5]
+    ```
+  * multiline
+    ```
+    x = 
+      1
+      [
+        2
+        3
+        4
+      5
+    ```
+* Unevaluted code
+  * Often represent unevaluated code which is evaluated step-by-step
+  * Differs from parentheses (which return each child) in that you can pick what is the result (often the last child)
+    * This allows you to execute multiple statements (each child) while only returning parts of the sequence instead of each child.
+
+Notice that, just like parentheses, blocks don't make a sequence (the `,` do). Instead they are a container around the sequence which provides context in how to interpret the sequence.
+
+If you need to pick between parentheses or blocks here's a few general rules:
+* Use parenthesis if you:
+  * Want the result to be a sequence of values
+  * Want to change the precedence
+  * Don't want to unwrap the result so it'll merge with the location it's used it (whether a function or variable result)
+* Use blocks if you:
+  * Want to isolate a sequence even when composed
+  * Execute a series of steps and only return the result of one of those steps. Which is how a Block is often evaluated.
+  * Pick some values, but not all, of the children.
+
+### Example - Composing
+
+Consider the following example:
+```
+x = (1, 2, 3)
+y = [1, 2, 3]
+```
+This is read as:
+* `x` is a sequence of `1, 2, 3`
+* `y` is a block containing a sequence of `1, 2, 3`
+
+When used, the differences are clear:
+```
+a = (0, x, 4)
+b = (0, y, 4)
+```
+
+the next step is substitute in place:
+```
+a = (0, (1, 2, 3), 4)
+b = (0, [1, 2, 3], 4)
+```
+
+which reduces `a` further to the final result:
+```
+a = (0, 1, 2, 3, 4)
+b = (0, [1, 2, 3], 4)
+```
+
+Notice how the inner block isn't reduced while the parentheses are.
+
+## Common Patterns
+------------------------------------------------------------------------------------------------------------
+
+At this point we've introduced all the basic syntax needed to describe the common syntactical patterns.
+
+For each pattern, there's a few effects to consider:
+* When a pattern in used next to it's siblings; what name(s) are visible to other siblings.
+  * For example, below `x` and `y` are siblings but `z` isn't:
+    ```
+    a
+      x
+      y
+    b
+      z
+    ```
+  * For convenience, we'll consider a "scope" as what siblings and their decendents can access. For Elder syntax, these are often just names and paths to those names.
+* When used as a node in a tree what is returned by the subtree.
+  * For example, the middle element is a sequence which is both a subtree and subexpression. It is the sequence `(b, c)`:
+    ```
+    (a, (b, c == 1, 2), d)
+    ```
+    this expands to:
+    ```
+    a, b = 1, c = 2, d
+    ```
+
+These are the common patterns along with the effects they will produce:
+* Multiline Literal
+  ```
+  x = 0
+    .a = 1
+    .b = 2
+    .c
+    :d = 3
+  y
+  z
+    .e = 4
+  ```
+  * Useful to model complex data as the structure is most explicit and verbose.
+  * This can only be composed within other multiline literal patterns as it's the only pattern which uses multiple lines.
+  * Effects
+    * The sequence of names `(x, y ,z)` will added to scope.
+    * When used in a subexpression `(x, y, z)` will be returned by the expression.
+* Inline Literal
+  ```
+  x .a = 1, .b = 2, .c, :d = 3
+  ```
+  * Useful to model moderately complex data which is often structured line-by-line like HTML, CSS, etc.
+  * It's possible to have multiple literals but the syntax becomes harder to understand.
+  * Effects
+    * The name `x` will be added to scope.
+    * When used in a subexpression `x` will be returned by the expression.
+* Chain
+  ```
+  x.(a = 1, b = 2, c):(d = 3) = 0
+  ```
+  * Useful to model nested structure as this more easily composes within other expressions.
+  * Often used to mimic syntax like `x:Int = 4` which we approximate w/ our current syntax as `x:(type = Int) = 4`
+  * Effects
+    * The name `x` will be added to scope.
+    * When used in a subexpression `x` will be returned by the expression.
+* Selection
+  ```
+  x.(a, b, c):(d), z.e
+  ```
+  * Useful to traverse (or define) the structure to a name.
+  * Selection multiple names results in a sequence of names. The above example expression becomes `(x.a, x.b, x.c, x:d, z.e)`
+    * Since selection only returned the deepest names of a structure. If you want to pass higher level names (like `x` in the above example) they need to be listed as well. For example `x, x.(a, b, c):(d), z.e` would expand to `(x, x.a, x.b, x.c, x:d, z.e)`.
+  * Effects
+    * This pattern is a bit different. Remember only top-level names will added to scope. For this example, only the sequence of names `(x, z)` are top level while the rest describe structure internal to those names.
+    * When used in a subexpression `(x.a, x.b, x.c, x:d, z.e)` is returned by the expression.
+* Destructure
+  ```
+  x.(a, b):(d), z.e == 0, 1, 2, 3
+  ```
+  * Destructure is a combination of L-hand selection and R-hand value. The pattern is names of the L-hand and values on the R-hand.
+  * Useful to model multiple return values, build data in a specific structure, define multiple names within scope.
+  * Effects
+    * This pattern is a bit different like selection above. For the same reason, only the sequence of names `(x, z)` are top level while the rest describe structure internal to those names.
+    * When used in a subexpression `(x, x.a, x.b, x.c, x:d, z.e)` is returned by the expression.
+* Sequence of Expressions
+  ```
+  x = 0, y, z.a = 2
+  ```
+  * Useful to model internals of a relator. Generally not preferred as a way to introduce names into a scope as can be confusing compared to multiline literal or destructure.
+  * Since `,` is lower precedence than `=` this is a series of 3 expressions.
+  * Effects
+    * The sequence of names `(x, y, z)` will be added to scope.
+    * When used in a subexpression `(x, y, z.a)` is returned by the expression.
+
+Although each of these are generally equivalent to one another, some patterns have different effects. The next sections discuss what they are and the reasoning behind their design decisions.
+
+### Top level names in scope
+
+The names which are added to the current scope can be different than what is returned by an expression. The rule for this is rather simple: only the top-level names will be brought to scope.
+
+Here's a few examples with the names brought into scope:
+* Multiline Literal
+  ```
+  x
+    .a = 1
+    .b = 1
+  y
+    :c = 2
+  z
+  ```
+  `(x, y, z)` are brought into scope. Their internal structure is internally scoped. For example `a` and `b` share the same scope of `x.`.
+* Inline Literal
+  ```
+  x .a, .b = 1, :c
+  ```
+  `x` is brought into scope. `a, b` share scope under `x.` and `c` under `x:`.
+* Chain
+  ```
+  x.(a, b = 1):(c)
+  ```
+  Scope rules are just like the previous example.
+* Selection
+  ```
+  x.(a, b:(t, u), c)
+  ```
+  `x` is brought into scope. `a, b, c` share scope under `x.` and `t, u` under `x.b:`
+* Destructure
+  ```
+  x.a, x.b, y.c.d, z == 1, 2, 3, 4
+  ```
+  Since only the top-level names are brought into scope; `x, y, z` are brought into scope.
+
+  To better visualize the structure view it as a multiline literal:
+  ```
+  x
+    .a = 1
+    .b = 2
+  y
+    .c
+      .d = 3
+  z = 4
+  ```
+  It's clear which scopes are shared viewing it this way.
+* Series of Expressions
+  ```
+  x, y = 1, z.a.b = 2
+  ```
+
+  This is read as a series of expressions. Rewriting it makes it even more clear:
+  ```
+  x
+  y = 1
+  z.a.b = 2
+  ```
+  It's clear now that `x, y, z` are brought into scope.
+
+## Composing (In Progress)
+------------------------------------------------------------------------------------------------------------
+
+* VIA
+  * Parent-child
+  * Siblings
+  * Subexp
+
+## Identifier (in progress)
+------------------------------------------------------------------------------------------------------------
+
+In order to model concepts like operators, prefix/suffix fixity, relators, literals, etc. it's important that:
+* it's very clear what are allowed identifiers for each type
+* concepts which combine into single words use orthogonal characters
+* deliniation?
+* 
+
+* cases
+  * relator
+  * relator name
+  * identifier
+  * reserved
+  * canonical
+  * upper case
+* 
+
+
+
+
+## Reserved (in progress)
+------------------------------------------------------------------------------------------------------------
+
+Since the syntax must be usable for both data and execution we reserve some some identifiers for future use.
+
+We reserve some identifiers for future use. TODO...
+
+* comptime `#`
+  * `#do`
+* `do`
+* 
+
+
+## Codegen (in progress)
+------------------------------------------------------------------------------------------------------------
+
+### Comptime
+### Codegen emit where in subexp
+### Deterministic Patterns
+
+## Sugar (in progress)
+------------------------------------------------------------------------------------------------------------
+
+### Operators act-like expanded tree node
+Now that we know how relators are modeled; we can now describe an additional syntactical tool. Most operators can become a tree node when in the expanded syntax form.
+
+Since we've already discussed it; let's use `=` which is usually a binary, infix operator.
+
+Equals can also act-like a relator in it's expanded form. It works the same as a `= \n` as discussed above and does what you'd expect.
+```
+x
+  =
+    a
+    b
+    c
+  .
+    x
+    y
+    z
+```
+
+is equivalent to:
+```
+x = (a, b, c)
+  .
+    x
+    y
+    z
+```
+
+This works for most syntactical operators since they all support a tree structure.
+
+### Defaulting (or space relator?)
+
+because, by default (explained in more depth at `Defaulting`), a `INDENT` signifies a parent-child relation, this is equivalent to:
+```
+x
+  a
+  b
+  c
+```
+
+### Anonymous Item
+There are cases where we want to represent a series of elements without a meaningful name.
+
+There are a few notes:
+* The only valid identifiers are `-` and `*`
+* Each sibling (items on the same indentation level) must consistently use the same syntax
+* The identifier for a sibling must only be at the start of a line in a multiline form
+* The identifier acts like a tag which means it can be added just to make items more clear
+
+Consider the psuedo code:
+```
+my-elems = [
+  { a, b, c = 3 },
+  { t, u, v = 6 },
+  { x, y, x = 9 }
+]
+```
+
+Using our current syntax we'd have  ...
+
+With our current syntax there isn't a way to represent this without weird syntax and visual noise. To avoid issues like this we'll introduce new syntax using `-` and `*` which:
+* work like most markup languages use them as list-item identifiers at the start of a line. If they're used immediately after the leading whitespace then it doesn't indicate an item.
+* only mean 
+
+Rules:
+* must use consistently for siblings
+  * can't mix identifier or add identifier or not
+* 
+
+## Literals
+------------------------------------------------------------------------------------------------------------
+
+[//]: # ( These are optional; when not present the values are interpretable as that type regardless. They are a means of adding constraints (like a Schema) )
+
+* Containers
+  * Sequence `()`
+  * List `[]`
+  * Map `{}`
+    * names w/o values are interpreted as just keys? w/ what value? Depends on type and DSL?
+  * String
+    * inline `""`
+    * block `"""`
+  * Code
+    * inline `` ` ``
+    * block ```` ``` ````
+* Primitives
+  * Integral
+  * Floating Point
+  * Fixed Point
+  * Constants
+    * PI
+    * 
+  * 
+* 
+
+## Types
+------------------------------------------------------------------------------------------------------------
+
+Types are useful when modeling data as it constraints the possible values the variable may contain.
+
+When creating a type, there are a few rules:
+* Must start w/ an upper-case alpha character (really necessary? can't we derive if it starts w/ a numeric?)
+* 
+
+### Sugar
+How to model `x:Int = 4` which expands to `x:(type = Int) = 4`?
+
+## Schema
+------------------------------------------------------------------------------------------------------------
+
+TODO
+* Look at other solutions: StrictYAML, OGDL, InternetObject, GraphQL, other schema definition systems?
+* 
+
+## Precedence
+------------------------------------------------------------------------------------------------------------
+
+### Global Precedence
+### Relative Precedence
+
