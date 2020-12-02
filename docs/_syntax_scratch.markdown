@@ -1702,10 +1702,6 @@ Here's a few examples with the names brought into scope:
 ## Identifier (in progress)
 ------------------------------------------------------------------------------------------------------------
 
-[//]: # (TODO: choose punctuation: ! @ # % ^ & * - _ + = ` ~ ( ) [ ] { } | \ : ; " ' < > , . ? /)
-
-[//]: # (TODO: Describe how relator is like mix of namespace, relation, and operator?)
-
 In order to model concepts like operators, prefix/suffix fixity, relators, literals, etc. it's important that:
 * it's very clear what are allowed identifiers for each type
 * concepts which combine into single words use orthogonal characters

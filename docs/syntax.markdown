@@ -76,7 +76,7 @@ This code tells us that:
 * `a, b, c` are children of `x` b/c they're nested under x w/ a 2 space `INDENT`
 * `a, b, c` are siblings b/c they're at the same indendation level under the same parent
 
-2 spaces are used b/c it's the minimal amount to make it clear there's indentation. No tabs, no variable spaces, nothing but 2 spaces per indentation. Later in this document there are ways to compact the syntax when it makes sense to do so.
+2 spaces are used b/c it's the minimal amount to make it clear there's indentation. No tabs, no variable spaces, nothing but 2 spaces per indentation. Later in this document there are ways to compact the syntax.
 
 This can be nested arbitrarily and the structure matches what you expect as the layout matches the code layout:
 ```
@@ -164,11 +164,8 @@ To understand this concept better consider other languages which are often hard 
   * accessing a `Namespace` uses `/` and is used like `my_namespace/my_val`
   * interop with `Java` or `JavaScript` uses `.` and is used like `(.toUpperCase "jane")`
 
-[//]: # (TODO: choose punctuation: ``! @ # % ^ & * - _ + = ` ~ ( ) [ ] { } | \ : ; " ' < > , . ? /``)
-[//]: # (TODO: Describe how relator is like mix of namespace, relation, and operator?)
-
 Functionally it works much like a **namespace** but:
-* character are only specific punctuation
+* characters can only be specific punctuation
   * Unicode will eventually be supported, but for now only ASCII printable characters (32 - 126) minus whatever is reserved
 * identifier characters and relator characters must not overlap b/c relators are used as delimiters between identifiers (like `a/b/c` where `/` is a relator)
 * is more general concept than a namespace and can be used to model more patterns
@@ -279,7 +276,7 @@ o.
   c = 3
 ```
 
-This is slightly more terse than the previous, structural representation as each of the common paths (`o.` and `b:`) are used. Although there's not much difference in this case; the usefulness is more pronounced in data which have deeply nested structure of which you only use a small amount like in the ***Deeply Nested Element*** example.
+This is slightly more terse than the previous, structural representation as each of the common paths (`o.` and `b:`) are used. Although there's not much difference in this case; the usefulness is more pronounced in data which have deeply nested structure.
 
 ### Example - Deeply Nested Element
 A more realistic example is to browse to HTML element we're concerned with and work w/n that scope:
@@ -340,9 +337,9 @@ Parentheses perform multiple duties depending on how they're used using our curr
 
 The underlying pattern of parentheses is that they:
 * group their contents together
-* depending on how they used, the effect varies (eg `o.(a = 1)` means something different than `x = (1, 2, 3)` but the pattern is the same of grouping their contents together)
+* depending on how they used, the effect varies (eg `o.(a = 1, b = 2, c = 3)` means something different than `x = (1, 2, 3)` but the pattern is the same of grouping their contents together)
 
-Unlike most languages, nothing is automatically dropped or reduced. Instead, certain usages, operators, and functions have consistent rules as to how they reduce. This is slightly more complex than automatically dropping everything but it also allows it to be better represent both data and code.
+[//]: # (Unlike most languages, nothing is automatically dropped or reduced. Instead, certain usages, operators, and functions have consistent rules as to how they reduce. This is slightly more complex than automatically dropping everything but it also allows it to be better represent both data and code.)
 
 ### Example - Common Structure
 
@@ -436,12 +433,12 @@ These variations are made available to fit various use-cases. The form which bes
 
 Destructuring is useful as it allows us to deal directly with the structure of data and is generally more terse.
 
-With our current syntax there's a problem. `=` is a higher precedence than `,`. This means code like:
+With our current syntax the problem is that `=` is a higher precedence than `,`. This means code like:
 ```
 x, y = 1, z
 ```
 
-is parsed as:
+is intepreted as:
 ```
 x
 y = 1
@@ -503,9 +500,9 @@ At this point we've introduced all the basic syntax needed to describe the most 
 
 ### Multiline Literal
 
-Useful to model complex data as the structure is most explicit and verbose. 
+Useful to model complex data it is most explicit and verbose. 
 
-Multiline literals can only be within other multiline literals as it's the only pattern which uses multiple lines.
+Multiline literals can only be embedded within other multiline literals as it's the only pattern which uses multiple lines.
 
 ```
 x = 0
@@ -533,6 +530,12 @@ Technically it's possible to have multiple inline elements on the same line but 
 ```
 x .a = 1, .b = 2, .c, :d = 3
   y .a, .b, :c = 1
+```
+
+or equivalently:
+```
+x .(a = 1, b = 2, c), :(d = 3)
+  y .(a, b), :(c = 1)
 ```
 
 The example reads as:
@@ -577,25 +580,30 @@ Selection only returned the deepest names of a structure. If you want to pass hi
 
 ### Destructure
 
-Destructure is a combination of selection on the L-hand and R-hand values. The L-hand is interpreted as a sequence of names and the R-hand as a sequence of values.
+Destructure is a combination of selection on the L-hand and values on the R-hand. The L-hand is interpreted as a sequence of names and the R-hand as a sequence of values.
 
 Useful to model multiple return values, build data in a specific structure, define multiple names at once, handle multiple return values, etc.
 
 ```
-x.(a, b):(d), z.e == 0, 1, 2, 3
+x.(a, b, c):(d), z.e == 0, 1, 2, 3, 4
 ```
 
 The example reads as:
 * under `x` name and then property relator `.` select names `a, b, c`
 * under `x` name and then metadata relator `:` select name `d`
 * under `z` name and then property relator `.` select name `e`
-* in order of selected, assign sequence of values `0, 1, 2, 3`
+* in order of selected, assign sequence of values `0, 1, 2, 3, 4`
+
+For clarity, this is translates to:
+```
+(x.a, x.b, x.c, x:d, z.e) = (0, 1, 2, 3, 4)
+```
 
 ### Sequence of Expressions
 
 Useful to model internals of an expression, relator, etc. as it describes multiple names and their values.
 
-Consider this example which is valid but overly confusing when ther are clearer patterns:
+Consider this valid, but overly confusing, example:
 ```
 x = 0, y, z.a = 2
 ```
@@ -621,17 +629,19 @@ This is more clear as the series of expressions describe the properties of `o` a
 
 ### Orthogonal Syntax
 
-Syntax patterns generally fall into 2 categories of purpose:
+Syntax patterns generally fall into one of two goals:
 * Describing internal structure of a name (multiline literal, inline literal, chain)
 * Describing multiple names regardless if they belong to a common parent (selection, destructure, sequence of expressions)
 
-Each of these categories are designed so that it's easier to compose data without worrying about the internal structure of a name. To keep them mostly orthogonal, we introduce a rule which we'll explore with examples below. The rule is: if a syntax is defining the internal structure of name, only the name itself will be exposed to the outside.
+The goals are separate so that it's easier to compose data without worrying about the internal structure of a name.
+
+To keep them mostly orthogonal, we introduce a rule which we'll explore with examples below. The rule is: ***if assigning values to names within a parent name, only the parent will be exposed to the outside.***
 
 Here's a simple example:
 ```
 x.(a = 1) = 0
 ```
-If the L-hand expression `x.(a = 0)` returned `x.a` this would result in `x.a = 1` then `x.a = 0`. `x.a` being overwritten on the R-hand value is rarely, if ever, what is desired. Often we want to ignore the internal structure of `x`.
+If the L-hand expression `x.(a = 1)` returned `x.a` this would result in `x.a = 1` then `x.a = 0`. `x.a` being overwritten on the R-hand value is rarely, if ever, what is desired. Often we want to ignore the internal structure of `x`.
 
 Instead this expands to:
 ```
@@ -663,10 +673,10 @@ x, y, y.a, y.b, y.b:t, y.c, z == 4, 5, 1, 2, 1, 3, 6
 
 or equivalently (which keeps more of the structure):
 ```
-x, y, y.(a, b, b:t, c), z = 4, 5, 1, 2, 1, 3, 6
+x, y, y.(a, b, b:t, c), z == 4, 5, 1, 2, 1, 3, 6
 ```
 
-For clarity, here is the same example but as a multiline literal (which should preferred for complex syntax):
+Even better is representing the data as a multiline literal (which should preferred for complex syntax):
 ```
 x = 4
 y = 5
@@ -677,9 +687,9 @@ y = 5
 z = 6
 ```
 
-### Headless Selection
+### Selection ignores parents
 
-When selection syntax is used, notice that only the names at the edge are passed. Consider the example:
+When selection syntax is used, notice that only the bottom children names are selected. Consider the example:
 ```
 x.(a, b:(t, u, v), c)
 ```
