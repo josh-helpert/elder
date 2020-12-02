@@ -708,13 +708,14 @@ x.(a, b:(t, u = 1, v), c)
 
 This changes the pattern from **selection** to **chain** b/c we're defining internal structure which hides all the interals of `x` until after this expression.
 
-
 ## Comments
 ------------------------------------------------------------------------------------------------------------
 
 There is only one syntax for comments `//`.
 
-Like most choices, this syntax serves multiple purposes and is done for consistency across codebases to avoid inconsequential variants.
+Like most design choices, this syntax serves multiple purposes and is done for consistency across codebases to avoid inconsequential variants.
+
+Comments are data and are parsed. This means they are machine parsable and can be used for generating documentation.
 
 Comments function in multiple ways:
 * Comments a line
@@ -727,7 +728,7 @@ Comments function in multiple ways:
   div
     .class = header //( My header ) main
   ```
-  * Notice how parentheses follow the pattern of start/stop throughout the syntax including comments
+  Notice how parentheses follow the pattern of start/stop throughout the syntax including comments
 * Comments until the end of a line
   ```
   div 
@@ -746,22 +747,24 @@ Comments are data just like the rest of the syntax and makes them machine parsab
 ## Escape
 ------------------------------------------------------------------------------------------------------------
 
-The only escape character is `\`. It can be used in multiple ways:
-* Escapes a single character
+The only escape character is `\`.
+
+It can be used in multiple ways:
+* Escapes a single character after it
   ```
   Hello\tWorld\n
   ```
-* Escapes whitespace
+* Including escaping whitespace
   ```
   my\ complex\ name = 1
   ```
-* Using parentheses will interpolate
+* Using parentheses will escape the contents of the parentheses. It can be used to interpolate:
   ```
   name = Jane
 
   "Hello \(name)!"
   ```
-  really any expression:
+  and expressions:
   ```
   x = 1
   y = 2
